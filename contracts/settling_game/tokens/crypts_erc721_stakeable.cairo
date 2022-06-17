@@ -1,13 +1,17 @@
-# Realms ERC721 Implementation
-#   Realms token that can be staked/unstaked
-
+# -----------------------------------
+# Staked Crypts ERC721 Implementation
+#   Crypts token that can be staked/unstaked
+#
 # SPDX-License-Identifier: MIT
 # OpenZeppelin Cairo Contracts v0.1.0 (token/erc721_enumerable/ERC721_Enumerable_Mintable_Burnable.cairo)
+# -----------------------------------
 
 %lang starknet
 
-from starkware.cairo.common.cairo_builtins import HashBuiltin, BitwiseBuiltin
+from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.uint256 import Uint256
+from starkware.starknet.common.syscalls import get_caller_address
+from starkware.cairo.common.math import assert_not_zero, assert_not_equal
 
 from openzeppelin.token.erc721.library import (
     ERC721_name,
@@ -20,10 +24,8 @@ from openzeppelin.token.erc721.library import (
     ERC721_initializer,
     ERC721_approve,
     ERC721_setApprovalForAll,
-    ERC721_only_token_owner,
     ERC721_setTokenURI,
 )
-
 from openzeppelin.token.erc721_enumerable.library import (
     ERC721_Enumerable_initializer,
     ERC721_Enumerable_totalSupply,
@@ -34,22 +36,13 @@ from openzeppelin.token.erc721_enumerable.library import (
     ERC721_Enumerable_transferFrom,
     ERC721_Enumerable_safeTransferFrom,
 )
+from openzeppelin.introspection.ERC165 import ERC165_supports_interface, INVALID_ID
+from openzeppelin.access.ownable import Ownable_initializer, Ownable_only_owner, Ownable_get_owner
+from openzeppelin.upgrades.library import Proxy_initializer, Proxy_set_implementation
 
-from openzeppelin.introspection.ERC165 import ERC165_supports_interface
-
-from openzeppelin.access.ownable import Ownable_initializer, Ownable_only_owner
-
-from openzeppelin.upgrades.library import (
-    Proxy_initializer,
-    Proxy_set_implementation,
-)
-
-from contracts.settling_game.utils.general import unpack_data
-from contracts.settling_game.utils.game_structs import RealmData
-
-#
+# -----------------------------------
 # Initializer
-#
+# -----------------------------------
 
 @external
 func initializer{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
@@ -62,18 +55,9 @@ func initializer{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_p
     return ()
 end
 
-@external
-func upgrade{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-    new_implementation : felt
-):
-    Ownable_only_owner()
-    Proxy_set_implementation(new_implementation)
-    return ()
-end
-
-#
+# -----------------------------------
 # Getters
-#
+# -----------------------------------
 
 @view
 func totalSupply{pedersen_ptr : HashBuiltin*, syscall_ptr : felt*, range_check_ptr}() -> (
@@ -103,8 +87,11 @@ end
 func supportsInterface{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     interfaceId : felt
 ) -> (success : felt):
-    let (success) = ERC165_supports_interface(interfaceId)
-    return (success)
+    with_attr error_message("ERC165: invalid interface id"):
+        let (success) = ERC165_supports_interface(interfaceId)
+        assert_not_equal(success, INVALID_ID)   # Make sure we don't get a gnarly error from ERC165 contract
+        return (success)
+    end
 end
 
 @view
@@ -159,9 +146,9 @@ func tokenURI{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}
     return (tokenURI)
 end
 
-#
+# -----------------------------------
 # Externals
-#
+# -----------------------------------
 
 @external
 func approve{pedersen_ptr : HashBuiltin*, syscall_ptr : felt*, range_check_ptr}(
@@ -199,14 +186,14 @@ end
 func mint{pedersen_ptr : HashBuiltin*, syscall_ptr : felt*, range_check_ptr}(
     to : felt, tokenId : Uint256
 ):
-    # Ownable_only_owner()
+    check_can_action()
     ERC721_Enumerable_mint(to, tokenId)
     return ()
 end
 
 @external
 func burn{pedersen_ptr : HashBuiltin*, syscall_ptr : felt*, range_check_ptr}(tokenId : Uint256):
-    ERC721_only_token_owner(tokenId)
+    check_can_action()
     ERC721_Enumerable_burn(tokenId)
     return ()
 end
@@ -220,73 +207,75 @@ func setTokenURI{pedersen_ptr : HashBuiltin*, syscall_ptr : felt*, range_check_p
     return ()
 end
 
-#
+# -----------------------------------
 # Bibliotheca added methods
-#
+# -----------------------------------
 
 @storage_var
-func realm_name(token_id : Uint256) -> (name : felt):
+func module_access() -> (address : felt):
 end
 
-@storage_var
-func realm_data(token_id : Uint256) -> (data : felt):
-end
-
+#@notice Set module access
+#@param address: Address of module that has access
 @external
-func set_realm_data{pedersen_ptr : HashBuiltin*, syscall_ptr : felt*, range_check_ptr}(
-    tokenId : Uint256, _realm_data : felt
+func set_module_access{pedersen_ptr : HashBuiltin*, syscall_ptr : felt*, range_check_ptr}(
+    address : felt
 ):
-    # # ONLY OWNER TODO
-    realm_data.write(tokenId, _realm_data)
+    Ownable_only_owner()
+    module_access.write(address)
     return ()
 end
 
+#@notice Set new implementation via proxy
+#@dev Can only be set by the arbiter
+#@param new_implementation: New implementation contract address
 @external
-func get_realm_info{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-    token_id : Uint256
-) -> (realm_data : felt):
-    let (data) = realm_data.read(token_id)
-    return (data)
+func upgrade{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    new_implementation : felt
+):
+    Ownable_only_owner()
+    Proxy_set_implementation(new_implementation)
+    return ()
 end
 
-@external
-func fetch_realm_data{
-    syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, bitwise_ptr : BitwiseBuiltin*
-}(realm_id : Uint256) -> (realm_stats : RealmData):
-    alloc_locals
+#@notice Check if the caller has module access, only other modules can have access
+#@return success: 1 if successful, 0 otherwise
+func check_caller{pedersen_ptr : HashBuiltin*, syscall_ptr : felt*, range_check_ptr}() -> (
+    success : felt
+):
+    let (address) = module_access.read()
+    let (caller) = get_caller_address()
 
-    let (data) = realm_data.read(realm_id)
-    # add name
-    let (regions) = unpack_data(data, 0, 255)
-    let (cities) = unpack_data(data, 8, 255)
-    let (harbours) = unpack_data(data, 16, 255)
-    let (rivers) = unpack_data(data, 24, 255)
-    let (resource_number) = unpack_data(data, 32, 255)
-    let (resource_1) = unpack_data(data, 40, 255)
-    let (resource_2) = unpack_data(data, 48, 255)
-    let (resource_3) = unpack_data(data, 56, 255)
-    let (resource_4) = unpack_data(data, 64, 255)
-    let (resource_5) = unpack_data(data, 72, 255)
-    let (resource_6) = unpack_data(data, 80, 255)
-    let (resource_7) = unpack_data(data, 88, 255)
-    let (wonder) = unpack_data(data, 96, 255)
-    let (order) = unpack_data(data, 104, 255)
+    if address == caller:
+        return (1)
+    end
 
-    let realm_stats = RealmData(
-        regions=regions,
-        cities=cities,
-        harbours=harbours,
-        rivers=rivers,
-        resource_number=resource_number,
-        resource_1=resource_1,
-        resource_2=resource_2,
-        resource_3=resource_3,
-        resource_4=resource_4,
-        resource_5=resource_5,
-        resource_6=resource_6,
-        resource_7=resource_7,
-        wonder=wonder,
-        order=order,
-    )
-    return (realm_stats=realm_stats)
+    return (0)
+end
+
+#@notice Check is the caller is the owner
+#@return success: 1 if successful, 0 otherwise
+func check_owner{pedersen_ptr : HashBuiltin*, syscall_ptr : felt*, range_check_ptr}() -> (
+    success : felt
+):
+    let (caller) = get_caller_address()
+    let (owner) = Ownable_get_owner()
+
+    if caller == owner:
+        return (1)
+    end
+
+    return (0)
+end
+
+#@notice Checks if the caller and owner addresses are not both 0
+#@dev Reverts on failure
+func check_can_action{pedersen_ptr : HashBuiltin*, syscall_ptr : felt*, range_check_ptr}():
+    let (caller) = check_caller()
+    let (owner) = check_owner()
+
+    with_attr error_message("Resources ERC1155: owner and caller are both the 0 address"):
+        assert_not_zero(owner + caller)
+    end
+    return ()
 end

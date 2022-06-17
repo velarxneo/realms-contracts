@@ -1,5 +1,10 @@
+# -----------------------------------
+# Proxy logic for modules
+#   This allows for module upgrades.
+#
 # SPDX-License-Identifier: MIT
 # OpenZeppelin Contracts for Cairo v0.1.0 (upgrades/Proxy.cairo)
+# -----------------------------------
 
 %lang starknet
 
@@ -7,10 +12,12 @@ from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.starknet.common.syscalls import delegate_call
 from openzeppelin.upgrades.library import Proxy_implementation_address, Proxy_set_implementation
 
-#
+# -----------------------------------
 # Constructor
-#
+# -----------------------------------
 
+#@notice Constructor for proxy contract
+#@param implementation_address: Address of target contract
 @constructor
 func constructor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     implementation_address : felt
@@ -19,10 +26,16 @@ func constructor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_p
     return ()
 end
 
-#
+# -----------------------------------
 # Fallback functions
-#
+# -----------------------------------
 
+#@notice Fallback function for routing txs to the target contract
+#@param selector: Function in the target contract
+#@param calldata_size: Number of calldata elements
+#@param calldata: Call data
+#@return retdata_size: Number of returndata elements
+#@return redata: Return data
 @external
 @raw_input
 @raw_output

@@ -1,8 +1,10 @@
+# -----------------------------------
 # Constants utility contract
 #   A set of constants that are used throughout the project
 #   and/or not provided by cairo (e.g. TRUE / FALSE)
 #
 # MIT License
+# -----------------------------------
 
 %lang starknet
 
@@ -54,8 +56,6 @@ const SHIFT_NFT_2 = 2 ** 7
 const SHIFT_NFT_3 = 2 ** 27
 const SHIFT_NFT_4 = 2 ** 52
 const SHIFT_NFT_5 = 2 ** 54
-
-
 
 const TRUE = 1
 const FALSE = 0

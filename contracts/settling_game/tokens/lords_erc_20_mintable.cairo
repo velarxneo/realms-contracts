@@ -1,5 +1,9 @@
+# -----------------------------------
+# Lords token contract
+#
 # SPDX-License-Identifier: MIT
 # OpenZeppelin Cairo Contracts v0.1.0 (token/erc20/ERC20_Upgradeable.cairo)
+# -----------------------------------
 
 %lang starknet
 
@@ -21,18 +25,16 @@ from openzeppelin.token.erc20.library import (
     ERC20_transferFrom,
     ERC20_mint,
 )
-
 from openzeppelin.upgrades.library import (
     Proxy_initializer,
     Proxy_only_admin,
     Proxy_set_implementation,
 )
-
 from openzeppelin.utils.constants import TRUE
 
-#
+# -----------------------------------
 # Initializer
-#
+# -----------------------------------
 
 @external
 func initializer{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
@@ -58,9 +60,9 @@ func upgrade{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     return ()
 end
 
-#
+# -----------------------------------
 # Getters
-#
+# -----------------------------------
 
 @view
 func name{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}() -> (name : felt):
@@ -106,9 +108,9 @@ func allowance{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
     return (remaining)
 end
 
-#
+# -----------------------------------
 # Externals
-#
+# -----------------------------------
 
 @external
 func transfer{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(

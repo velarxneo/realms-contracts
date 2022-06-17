@@ -1,8 +1,10 @@
+#-----------------------------------
 # Game Structs
 #   A struct that holds the Realm statistics.
 #   Each module will need to add a struct with their metadata.
 #
 # MIT License
+#-----------------------------------
 
 %lang starknet
 

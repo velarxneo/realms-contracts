@@ -1,3 +1,10 @@
+# -----------------------------------
+# Combat Library
+#   Helper functions for combat calculations.
+#
+# MIT License
+# -----------------------------------
+
 %lang starknet
 
 from starkware.cairo.common.alloc import alloc
@@ -25,7 +32,10 @@ from contracts.settling_game.utils.game_structs import (
 # used for packing
 const SHIFT = 0x100
 
-namespace COMBAT:
+namespace Combat:
+    #@notice Compute total squad stats from individual troops
+    #@param s: Squad
+    #@return stats: Squad stats with agility, attack, defense, vitality and wisdom
     func compute_squad_stats(s : Squad) -> (stats : SquadStats):
         let agility = s.t1_1.agility + s.t1_2.agility + s.t1_3.agility + s.t1_4.agility +
             s.t1_5.agility + s.t1_6.agility + s.t1_7.agility + s.t1_8.agility + s.t1_9.agility +
@@ -67,6 +77,9 @@ namespace COMBAT:
         )
     end
 
+    #@notice Compute total squad vitality from individual troops
+    #@param s: Squad
+    #@return stats: Squad vitality
     func compute_squad_vitality(s : Squad) -> (vitality : felt):
         let vitality = s.t1_1.vitality + s.t1_2.vitality + s.t1_3.vitality + s.t1_4.vitality +
             s.t1_5.vitality + s.t1_6.vitality + s.t1_7.vitality + s.t1_8.vitality + s.t1_9.vitality +
@@ -77,6 +90,11 @@ namespace COMBAT:
         return (vitality)
     end
 
+    #@notice Pack squad troops into a compact format
+    #@dev: Pack defensive and offensive squads by bitshifting individual troops
+    #@implicit range_check_ptr
+    #@param s: Squad
+    #@return p: Packed squad
     func pack_squad{range_check_ptr}(s : Squad) -> (p : PackedSquad):
         alloc_locals
 
@@ -141,6 +159,10 @@ namespace COMBAT:
         return (PackedSquad(p1=p1, p2=p2))
     end
 
+    #@notice Unpack squad troops
+    #@implicit range_check_ptr
+    #@param p: Packed squad
+    #@return s: (Unpacked) squad
     func unpack_squad{range_check_ptr}(p : PackedSquad) -> (s : Squad):
         alloc_locals
 
@@ -184,13 +206,27 @@ namespace COMBAT:
         )
     end
 
+    #@notice Pack individual troop
+    #@dev Pack troop id and troop vitality
+    #@implicit range_check_ptr
+    #@param t: Packed troop
+    #@return packed: (Unpacked) troop
     func pack_troop{range_check_ptr}(t : Troop) -> (packed : felt):
-        assert_lt(t.id, TroopId.SIZE)
-        assert_le(t.vitality, 255)
+        with_attr error_message("COMBAT_LIBRARY: Trying to pack invalid troop id"):
+            assert_lt(t.id, TroopId.SIZE)
+        end
+        with_attr error_message("COMBAT_LIBRARY: Trying to pack invalid troop vitality"):
+            assert_le(t.vitality, 255)
+        end
         let packed = t.id + t.vitality * SHIFT
         return (packed)
     end
 
+    #@notice Unpack individual troop
+    #@dev If troop_id == 0, returns a dummy troop
+    #@implicit range_check_ptr
+    #@param t: Packed squad
+    #@return packed: (Unpacked) troop
     func unpack_troop{range_check_ptr}(packed : felt) -> (t : Troop):
         alloc_locals
         let (vitality, troop_id) = unsigned_div_rem(packed, SHIFT)
@@ -206,15 +242,28 @@ namespace COMBAT:
         )
     end
 
-    # the values in the tuple this function returns don't change for a Troop,
-    # so we hardcode them in the code and use this function to retrieve them
-    # this way, we don't have to store them on-chain which allows for more efficient
-    # packing (only troop ID and vitality have to be stored)
+    #@notice Get troops parameters
+    #@dev The values in the tuple this function returns don't change for a Troop,
+    #     so we hardcode them in the code and use this function to retrieve them
+    #     this way, we don't have to store them on-chain which allows for more efficient
+    #     packing (only troop ID and vitality have to be stored)
+    #@implicit range_check_ptr
+    #@param troop_id: Troop id
+    #@return type: Type of troop
+    #@return tier: Tier of troop (1,2 or 3)
+    #@return agility: Agility stat of troop
+    #@return attack: Attack stat of troop
+    #@return vitality: Vitality stat of troop
+    #@return wisdom: Wisdom stat of troop
     func get_troop_properties{range_check_ptr}(troop_id : felt) -> (
         type, tier, agility, attack, defense, vitality, wisdom
     ):
-        assert_not_zero(troop_id)
-        assert_lt(troop_id, TroopId.SIZE)
+        with_attr error_message("COMBAT_LIBRARY: troop_id cannot be zero"):
+            assert_not_zero(troop_id)
+        end
+        with_attr error_message("COMBAT_LIBRARY: Invalid troop_id"):
+            assert_lt(troop_id, TroopId.SIZE)
+        end
 
         let idx = troop_id - 1
         let (type_label) = get_label_location(troop_types_per_id)
@@ -362,9 +411,15 @@ namespace COMBAT:
         dw 16  # Grand Marshal
     end
 
+    #@notice Create Troop object from data
+    #@implicit range_check_ptr
+    #@param troop_id: Troop id
+    #@return t: Troop
     func get_troop_internal{range_check_ptr}(troop_id : felt) -> (t : Troop):
-        with_attr error_message("unknown troop ID"):
+        with_attr error_message("COMBAT_LIBRARY: troop_id cannot be zero"):
             assert_not_zero(troop_id)
+        end
+        with_attr error_message("COMBAT_LIBRARY: Invalid troop_id"):
             assert_lt(troop_id, TroopId.SIZE)
         end
 
@@ -372,10 +427,24 @@ namespace COMBAT:
             troop_id
         )
         return (
-            Troop(id=troop_id, type=type, tier=tier, agility=agility, attack=attack, defense=defense, vitality=vitality, wisdom=wisdom),
+            Troop(
+                id=troop_id,
+                type=type,
+                tier=tier,
+                agility=agility,
+                attack=attack,
+                defense=defense,
+                vitality=vitality,
+                wisdom=wisdom,
+            ),
         )
     end
 
+    #@notice Adds troop to a specific squad
+    #@dev Adds troops in the first found free slot(s)
+    #@param t: Troop
+    #@param s: Squad
+    #@return updated: Updated squad
     func add_troop_to_squad(t : Troop, s : Squad) -> (updated : Squad):
         alloc_locals
         let (__fp__, _) = get_fp_and_pc()
@@ -394,9 +463,16 @@ namespace COMBAT:
         return ([updated])
     end
 
+    #@notice Removes troop from a specific squad
+    #@dev Adds troops in the first found free slot(s)
+    #@param troop_idx: Index of troop in array
+    #@param s: Squad
+    #@return updated: Updated squad
     func remove_troop_from_squad{range_check_ptr}(troop_idx : felt, s : Squad) -> (updated : Squad):
         alloc_locals
-        assert_lt(troop_idx, Squad.SIZE / Troop.SIZE)
+        with_attr error_message("COMBAT_LIBRARY: Troop index out of bounds"):
+            assert_lt(troop_idx, Squad.SIZE / Troop.SIZE)
+        end
 
         let (__fp__, _) = get_fp_and_pc()
         let (a) = alloc()
@@ -413,6 +489,11 @@ namespace COMBAT:
         return ([updated])
     end
 
+    #@notice Finds the first free troop slot in a squad, reverts when there is no free slot
+    #@dev Searches for troop type == 0
+    #@param s: Squad
+    #@param tier: Tier to search within the squad
+    #@return free_slot_index: First free slot index
     func find_first_free_troop_slot_in_squad(s : Squad, tier : felt) -> (free_slot_index : felt):
         # type == 0 just means the slot is free (0 is the default, if no Troop was assigned there, it's going to be 0)
         if tier == 1:
@@ -499,13 +580,19 @@ namespace COMBAT:
             end
         end
 
-        with_attr error_message("no free troop slot in squad"):
+        with_attr error_message("COMBAT LIBRARY: No free troop slot in squad"):
             assert 1 = 0
         end
 
         return (0)
     end
 
+    #@notice Adds multiple troops to squad
+    #@implicit range_check_ptr
+    #@param current: Current squad
+    #@param troop_ids_len: Number of troops to add
+    #@param troop_ids: Troop ids array
+    #@return squad: Updated squad
     func add_troops_to_squad{range_check_ptr}(
         current : Squad, troop_ids_len : felt, troop_ids : felt*
     ) -> (squad : Squad):
@@ -521,6 +608,12 @@ namespace COMBAT:
         return add_troops_to_squad(updated, troop_ids_len - 1, troop_ids + 1)
     end
 
+    #@notice Removes multiple troops from squad
+    #@implicit range_check_ptr
+    #@param current: Current squad
+    #@param troop_ids_len: Number of troops to remove
+    #@param troop_ids: Troop indexes of original squad
+    #@return squad: Updated squad
     func remove_troops_from_squad{range_check_ptr}(
         current : Squad, troop_idxs_len : felt, troop_idxs : felt*
     ) -> (squad : Squad):
@@ -534,6 +627,10 @@ namespace COMBAT:
         return remove_troops_from_squad(updated, troop_idxs_len - 1, troop_idxs + 1)
     end
 
+    #@notice Get number of troops in squad
+    #@implicit range_check_ptr
+    #@param squad: Packed squad
+    #@return population: Number of troops in squad
     func get_troop_population{range_check_ptr}(squad : PackedSquad) -> (population : felt):
         alloc_locals
 

@@ -1,8 +1,10 @@
+# -----------------------------------
 # Crypts ERC721 Implementation
 #   Crypts dungeon token that can be staked/unstaked
 
 # SPDX-License-Identifier: MIT
 # OpenZeppelin Cairo Contracts v0.1.0 (token/erc721/ERC721_Mintable_Burnable.cairo)
+# -----------------------------------
 
 %lang starknet
 
@@ -24,7 +26,6 @@ from openzeppelin.token.erc721.library import (
     ERC721_only_token_owner,
     ERC721_setTokenURI
 )
-
 from openzeppelin.token.erc721_enumerable.library import (
     ERC721_Enumerable_initializer,
     ERC721_Enumerable_totalSupply,
@@ -35,19 +36,16 @@ from openzeppelin.token.erc721_enumerable.library import (
     ERC721_Enumerable_transferFrom,
     ERC721_Enumerable_safeTransferFrom,
 )
-
 from openzeppelin.introspection.ERC165 import ERC165_supports_interface, INVALID_ID
-
 from openzeppelin.access.ownable import Ownable_initializer, Ownable_only_owner
-
 from openzeppelin.upgrades.library import Proxy_initializer, Proxy_set_implementation
 
 from contracts.settling_game.utils.general import unpack_data
 from contracts.settling_game.utils.game_structs import CryptData
 
-#
+# -----------------------------------
 # Initializer
-#
+# -----------------------------------
 
 @external
 func initializer{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
@@ -69,9 +67,9 @@ func upgrade{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     return ()
 end
 
-#
+# -----------------------------------
 # Getters
-#
+# -----------------------------------
 
 @view
 func totalSupply{pedersen_ptr : HashBuiltin*, syscall_ptr : felt*, range_check_ptr}() -> (
@@ -160,9 +158,9 @@ func tokenURI{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}
     return (tokenURI)
 end
 
-#
+# -----------------------------------
 # Externals
-#
+# -----------------------------------
 
 @external
 func approve{pedersen_ptr : HashBuiltin*, syscall_ptr : felt*, range_check_ptr}(
@@ -221,31 +219,40 @@ func setTokenURI{pedersen_ptr : HashBuiltin*, syscall_ptr : felt*, range_check_p
     return ()
 end
 
-#
+# -----------------------------------
 # Bibliotheca added methods
-#
+# -----------------------------------
 
 @storage_var
 func crypt_data(token_id : Uint256) -> (data : felt):
 end
 
+#@notice Set crypt data
+#@param token_id: Crypt token id
+#@param data: Crypt data
 @external
 func set_crypt_data{pedersen_ptr : HashBuiltin*, syscall_ptr : felt*, range_check_ptr}(
-    tokenId : Uint256, _crypt_data : felt
+    token_id : Uint256, data : felt
 ):
     # # ONLY OWNER TODO
-    crypt_data.write(tokenId, _crypt_data)
+    crypt_data.write(token_id, data)
     return ()
 end
 
+#@notice Get (raw) crypt data
+#@param token_id: Crypt token id
+#@return data: Crypt data
 @external
 func get_crypt_info{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     token_id : Uint256
-) -> (crypt_data : felt):
+) -> (data : felt):
     let (data) = crypt_data.read(token_id)
     return (data)
 end
 
+#@notice Fetch (parsed) crypt data
+#@param token_id: Crypt token id
+#@return crypt_stats: CryptData object with all stats
 @external
 func fetch_crypt_data{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, bitwise_ptr : BitwiseBuiltin*

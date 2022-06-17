@@ -1,7 +1,9 @@
+#-----------------------------------
 # General Purpose Utilities
 #   Utility functions that are used across the project (e.g. compute the unique hash of a list of felts)
 #
 # MIT License
+#-----------------------------------
 
 %lang starknet
 
@@ -21,7 +23,10 @@ from contracts.settling_game.utils.pow2 import pow2
 
 const MAX_UINT_PART = 2 ** 128 - 1
 
-# Computes the unique hash of a list of felts.
+#@notice Computes the unique hash of a list of felts
+#@param list: Input list
+#@param list_len: Length of the input list
+#@return hash: Hash of the input list
 func list_to_hash{pedersen_ptr : HashBuiltin*, range_check_ptr}(list : felt*, list_len : felt) -> (
     hash : felt
 ):
@@ -30,7 +35,13 @@ func list_to_hash{pedersen_ptr : HashBuiltin*, range_check_ptr}(list : felt*, li
     return (list_hash.current_hash)
 end
 
-# Generic mapping from one range to another.
+#@notice Generic mapping from one range to another
+#@param val_in: Input value
+#@param in_low: Input lower bound
+#@param in_high: Input upper bound
+#@param out_low: Output lower bound
+#@param out_high: Output upper bound
+#@return val_out: Scaled output value
 func scale{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, bitwise_ptr : BitwiseBuiltin*
 }(val_in : felt, in_low : felt, in_high : felt, out_low : felt, out_high : felt) -> (
@@ -45,8 +56,11 @@ func scale{
     return (val_out)
 end
 
-# upack data
-# parse data, index, mask_size
+#@notice Unpacks data through a mask
+#@param data: Packed data
+#@param index: Index of 
+#@param mask_size: Mask size in bits
+#@return score: Unpacked result
 func unpack_data{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, bitwise_ptr : BitwiseBuiltin*, range_check_ptr
 }(data : felt, index : felt, mask_size : felt) -> (score : felt):
@@ -68,17 +82,21 @@ func unpack_data{
     return (score=result)
 end
 
-# function takes an array of Cost structs and restructures it into two arrays,
-# one holding the resource IDs of tokens and the other the amounts of these tokens
-# which can be directly passed into a IERC1155.burnBatch call
-# the return value of this function is the length of the token arrays, i.e. the
-# count of unique tokens
-# the token_ids and token_values argument have to be `alloc()`ed in the calling
-# scope:
-#
-# let (token_ids : Uint256*) = alloc()
-# let (token_values : Uint256*) = alloc()
-# let (token_len : felt) = transform_costs_to_token_ids_values(costs_len, costs, toekn_ids, token_values)
+#@notice Function takes an array of Cost structs and restructures it into two arrays,
+#  one holding the resource IDs of tokens and the other the amounts of these tokens
+#  which can be directly passed into a IERC1155.burnBatch call
+#  the return value of this function is the length of the token arrays, i.e. the
+#  count of unique tokens
+#  the token_ids and token_values argument have to be `alloc()`ed in the calling
+#  scope:
+#    let (token_ids : Uint256*) = alloc()
+#    let (token_values : Uint256*) = alloc()
+#    let (token_len : felt) = transform_costs_to_token_ids_values(costs_len, costs, toekn_ids, token_values)
+#@param costs_len: Size of costs list
+#@param costs: Costs list
+#@param token_ids: Token ids
+#@param token_values: List of token values
+#@return tokens: Cost in tokens
 func transform_costs_to_token_ids_values{
     syscall_ptr : felt*, range_check_ptr, pedersen_ptr : HashBuiltin*, bitwise_ptr : BitwiseBuiltin*
 }(costs_len : felt, costs : Cost*, token_ids : Uint256*, token_values : Uint256*) -> (
@@ -104,12 +122,17 @@ func transform_costs_to_token_ids_values{
     return (d_len)
 end
 
-# function takes an array of Cost structs (which hold packed values of
-# resource IDs and respective amounts of these resources necessary to build
-# something) and unpacks them into two arrays of `ids` and `values` - i.e.
-# this func has a side-effect of populating the ids and values arrays;
-# it returns the total number of resources as `sum([c.resource_count for c in costs])`
-# which is also the length of the ids and values arrays
+#@notice Function takes an array of Cost structs (which hold packed values of
+#  resource IDs and respective amounts of these resources necessary to build
+#  something) and unpacks them into two arrays of `ids` and `values` - i.e.
+#  this func has a side-effect of populating the ids and values arrays;
+#@param ids: Resource ids list
+#@param values: Amount per resource
+#@param costs_len: Size of costs list
+#@param costs: Costs list
+#@cummulative_resource_count: Recursion parameter for keeping track of sum
+#@return total_resource_count: The total number of resources as `sum([c.resource_count for c in costs])`
+#  which is also the length of the ids and values arrays
 func load_resource_ids_and_values_from_costs{
     syscall_ptr : felt*, range_check_ptr, pedersen_ptr : HashBuiltin*, bitwise_ptr : BitwiseBuiltin*
 }(
@@ -133,11 +156,15 @@ func load_resource_ids_and_values_from_costs{
     )
 end
 
-# helper function for the load_resource_ids_and_values_from_cost
-# it works with a single Cost struct, from which it unpacks the packed
-# resource IDs and packed resource amounts and appends these to
-# the passed in `ids` and `values` array; it recursively calls itself,
-# looping through all the resources (resource_count) in the Cost struct
+#@notice Helper function for the load_resource_ids_and_values_from_cost
+#  it works with a single Cost struct, from which it unpacks the packed
+#  resource IDs and packed resource amounts and appends these to
+#  the passed in `ids` and `values` array; it recursively calls itself,
+#  looping through all the resources (resource_count) in the Cost struct
+#@param cost: Cost struct to loop through
+#@param idx: Current index
+#@param ids: List of ids to be build
+#@param values: List of values to be build
 func load_single_cost_ids_and_values{
     syscall_ptr : felt*, range_check_ptr, pedersen_ptr : HashBuiltin*, bitwise_ptr : BitwiseBuiltin*
 }(cost : Cost, idx : felt, ids : felt*, values : felt*):
@@ -156,9 +183,13 @@ func load_single_cost_ids_and_values{
     return load_single_cost_ids_and_values(cost, idx + 1, ids, values)
 end
 
-# function takes a dictionary where the keys are (ERC1155) token IDs and
-# values are the amounts to be bought and populates the passed in `token_ids`
-# and `token_values` arrays with Uint256 elements
+#@notice Function takes a dictionary where the keys are (ERC1155) token IDs and
+#  values are the amounts to be bought and populates the passed in `token_ids`
+#  and `token_values` arrays with Uint256 elements
+#@param len: Length of dictionary
+#@d: Address of DictAccess struct
+#@token_ids: List of token ids to be build
+#@token_values: List of token values to be build
 func convert_cost_dict_to_tokens_and_values{range_check_ptr}(
     len : felt, d : DictAccess*, token_ids : Uint256*, token_values : Uint256*
 ):
@@ -184,18 +215,23 @@ func convert_cost_dict_to_tokens_and_values{range_check_ptr}(
     )
 end
 
-# given two arrays of length `len` which can be though of as key-value mapping split
-# into `keys` and `values`, the function computes the sum of values by key
-# it returns a Cairo dict
+#@notice Given two arrays of length `len` which can be though of as key-value mapping split
+#  into `keys` and `values`, the function computes the sum of values by key
+#  it returns a Cairo dict
 #
-# given input
-# len = 4
-# keys = ["a", "c", "d", "c"]
-# values = [2, 2, 2, 2]
+#  given input
+#  len = 4
+#  keys = ["a", "c", "d", "c"]
+#  values = [2, 2, 2, 2]
 #
-# the result is
-# d_len = 3
-# d = {"a": 2, "c": 4, "d": 2}
+#  the result is
+#  d_len = 3
+#  d = {"a": 2, "c": 4, "d": 2}
+#@param len: Lenght of input array
+#@param keys: Dict keys
+#@param values: Dict values
+#@return d_len: Dictionary length
+#@return d: Address of DictAccess struct with summed components
 func sum_values_by_key{range_check_ptr}(len : felt, keys : felt*, values : felt*) -> (
     d_len : felt, d : DictAccess*
 ):
@@ -215,7 +251,12 @@ func sum_values_by_key{range_check_ptr}(len : felt, keys : felt*, values : felt*
     return (unique_keys, finalized_dict_start)
 end
 
-# helper function for sum_values_by_key, doing the recursive looping
+#@notice Helper function for sum_values_by_key, doing the recursive looping
+#@param dict: Address of DictAccess struct
+#@param len: Length of dict
+#@param keys: Dict keys
+#@params values: Dict values
+#@return dict_end: Address of dict
 func sum_values_by_key_loop{range_check_ptr}(
     dict : DictAccess*, len : felt, keys : felt*, values : felt*
 ) -> (dict_end : DictAccess*):

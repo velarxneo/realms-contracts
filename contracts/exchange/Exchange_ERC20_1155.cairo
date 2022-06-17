@@ -1,5 +1,9 @@
 %lang starknet
 
+# --------------------------------------------------------------------------------------------------------
+# This file contains logic for an Automated Market Maker where players can trade resources.
+# --------------------------------------------------------------------------------------------------------
+
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.alloc import alloc
 from starkware.starknet.common.syscalls import (

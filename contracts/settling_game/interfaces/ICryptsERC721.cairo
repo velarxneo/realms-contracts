@@ -1,9 +1,23 @@
+# -----------------------------------
+# Crypts n Caverns ERC721 Interface
+#
+# MIT License
+# -----------------------------------
+
 %lang starknet
 
 from starkware.cairo.common.uint256 import Uint256
 
+from contracts.settling_game.utils.game_structs import CryptData
+
 @contract_interface
-namespace s_crypts_IERC721:
+namespace IERC165:
+    func supportsInterface(interface_id : felt) -> (success : felt):
+    end
+end
+
+@contract_interface
+namespace ICryptsERC721:
     func name() -> (name : felt):
     end
 
@@ -16,7 +30,9 @@ namespace s_crypts_IERC721:
     func ownerOf(token_id : Uint256) -> (owner : felt):
     end
 
-    func safeTransferFrom(_from : felt, to : felt, token_id : Uint256, data : felt):
+    func safeTransferFrom(
+        _from : felt, to : felt, token_id : Uint256, data_len : felt, data : felt*
+    ):
     end
 
     func transferFrom(_from : felt, to : felt, token_id : Uint256):
@@ -34,9 +50,12 @@ namespace s_crypts_IERC721:
     func isApprovedForAll(owner : felt, operator : felt) -> (is_approved : felt):
     end
 
-    func mint(to : felt, token_id : Uint256):
+    func get_is_unlocked(token_id : Uint256) -> (is_unlocked : felt):
     end
 
-    func burn(token_id : Uint256):
+    func lockState(token_id : Uint256, lock_state : felt) -> (is_unlocked : felt):
+    end
+
+    func fetch_crypt_data(token_id : Uint256) -> (crypt_data : CryptData):
     end
 end

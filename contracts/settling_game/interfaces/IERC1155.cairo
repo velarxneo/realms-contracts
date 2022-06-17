@@ -1,9 +1,12 @@
+# ----------------------------------
 # Interface for ERC1155 Token
-#   A standard interface for contracts that manage multiple token types.
+#   A standard interface for contracts that manages multiple token types.
 #
 # MIT License
+# ----------------------------------
 
 %lang starknet
+
 from starkware.cairo.common.uint256 import Uint256
 
 @contract_interface

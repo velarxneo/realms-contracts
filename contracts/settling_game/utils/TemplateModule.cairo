@@ -1,21 +1,19 @@
+#-----------------------------------
 # Module Template
 #   Use this template when you want to make a new module.
 #   See directions below (____MODULE_XXX___BUILDING_STATE)
 #
 # MIT License
+#-----------------------------------
 
 %lang starknet
 
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.starknet.common.syscalls import get_caller_address
 
-from contracts.settling_game.interfaces.imodules import IModuleController
+from contracts.settling_game.interfaces.IModules import IModuleController
 
-from contracts.settling_game.library.library_module import (
-    MODULE_controller_address,
-    MODULE_only_approved,
-    MODULE_initializer,
-)
+from contracts.settling_game.library.library_module import Module
 
 from openzeppelin.upgrades.library import (
     Proxy_initializer,
@@ -41,18 +39,24 @@ from openzeppelin.upgrades.library import (
 # 8. +/- Add useful interfaces for this module to interfaces/imodules.cairo.
 # 9. Delete this set of instructions.
 
-###############
+#-----------------------------------
 # CONSTRUCTOR #
-###############
+#-----------------------------------
 
 @external
 func initializer{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     address_of_controller : felt, proxy_admin : felt
 ):
-    MODULE_initializer(address_of_controller)
+    Module.initializer(address_of_controller)
     Proxy_initializer(proxy_admin)
     return ()
 end
+
+
+
+#-----------------------------------
+# EXTERNAL #
+#-----------------------------------
 
 @external
 func upgrade{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
@@ -63,22 +67,20 @@ func upgrade{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     return ()
 end
 
-############
-# EXTERNAL #
-############
-
 # Called by another module to update a global variable.
 @external
 func update_value{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
     # TODO Customise.
-    MODULE_only_approved()
+    Module.only_approved()
     return ()
 end
 
-###########
+#-----------------------------------
 # GETTERS #
-###########
+#-----------------------------------
 
-###########
+
+#-----------------------------------
 # SETTERS #
-###########
+#-----------------------------------
+

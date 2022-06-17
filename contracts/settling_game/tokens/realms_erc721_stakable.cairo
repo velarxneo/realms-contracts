@@ -1,8 +1,10 @@
+# -----------------------------------
 # Realms ERC721 Implementation
 #   Realms token that can be staked/unstaked
-
+#
 # SPDX-License-Identifier: MIT
 # OpenZeppelin Cairo Contracts v0.1.0 (token/erc721_enumerable/ERC721_Enumerable_Mintable_Burnable.cairo)
+# -----------------------------------
 
 %lang starknet
 
@@ -10,6 +12,7 @@ from starkware.cairo.common.cairo_builtins import HashBuiltin, SignatureBuiltin,
 from starkware.cairo.common.uint256 import Uint256
 from starkware.starknet.common.syscalls import get_caller_address
 from starkware.cairo.common.math import assert_not_zero
+
 from openzeppelin.token.erc721.library import (
     ERC721_name,
     ERC721_symbol,
@@ -24,7 +27,6 @@ from openzeppelin.token.erc721.library import (
     ERC721_only_token_owner,
     ERC721_setTokenURI,
 )
-
 from openzeppelin.token.erc721_enumerable.library import (
     ERC721_Enumerable_initializer,
     ERC721_Enumerable_totalSupply,
@@ -35,19 +37,16 @@ from openzeppelin.token.erc721_enumerable.library import (
     ERC721_Enumerable_transferFrom,
     ERC721_Enumerable_safeTransferFrom,
 )
-
 from openzeppelin.introspection.ERC165 import ERC165_supports_interface
-
 from openzeppelin.access.ownable import Ownable_initializer, Ownable_only_owner, Ownable_get_owner
-
 from openzeppelin.upgrades.library import (
     Proxy_initializer,
     Proxy_set_implementation,
 )
 
-#
+# -----------------------------------
 # Initializer
-#
+# -----------------------------------
 
 @external
 func initializer{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
@@ -60,18 +59,9 @@ func initializer{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_p
     return ()
 end
 
-@external
-func upgrade{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-    new_implementation : felt
-):
-    Ownable_only_owner()
-    Proxy_set_implementation(new_implementation)
-    return ()
-end
-
-#
+# -----------------------------------
 # Getters
-#
+# -----------------------------------
 
 @view
 func totalSupply{pedersen_ptr : HashBuiltin*, syscall_ptr : felt*, range_check_ptr}() -> (
@@ -157,9 +147,9 @@ func tokenURI{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}
     return (tokenURI)
 end
 
-#
+# -----------------------------------
 # Externals
-#
+# -----------------------------------
 
 @external
 func approve{pedersen_ptr : HashBuiltin*, syscall_ptr : felt*, range_check_ptr}(
@@ -218,29 +208,43 @@ func setTokenURI{pedersen_ptr : HashBuiltin*, syscall_ptr : felt*, range_check_p
     return ()
 end
 
-#
+# -----------------------------------
 # Bibliotheca added methods
-#
+# -----------------------------------
 
 @storage_var
-func Module_access() -> (address : felt):
+func module_access() -> (address : felt):
 end
 
+#@notice Set module access
+#@param address: Address of module that has access
 @external
-func Set_module_access{pedersen_ptr : HashBuiltin*, syscall_ptr : felt*, range_check_ptr}(
+func set_module_access{pedersen_ptr : HashBuiltin*, syscall_ptr : felt*, range_check_ptr}(
     address : felt
 ):
     Ownable_only_owner()
-    Module_access.write(address)
+    module_access.write(address)
     return ()
 end
 
-# ONLY ALLOWS MODULE TO MINT S_REALM
-
-func check_caller{pedersen_ptr : HashBuiltin*, syscall_ptr : felt*, range_check_ptr}() -> (
-    value : felt
+#@notice Set new implementation via proxy
+#@dev Can only be set by the arbiter
+#@param new_implementation: New implementation contract address
+@external
+func upgrade{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+    new_implementation : felt
 ):
-    let (address) = Module_access.read()
+    Ownable_only_owner()
+    Proxy_set_implementation(new_implementation)
+    return ()
+end
+
+#@notice Check if the caller has module access, only other modules can have access
+#@return success: 1 if successful, 0 otherwise
+func check_caller{pedersen_ptr : HashBuiltin*, syscall_ptr : felt*, range_check_ptr}() -> (
+    success : felt
+):
+    let (address) = module_access.read()
     let (caller) = get_caller_address()
 
     if address == caller:
@@ -250,8 +254,10 @@ func check_caller{pedersen_ptr : HashBuiltin*, syscall_ptr : felt*, range_check_
     return (0)
 end
 
+#@notice Check is the caller is the owner
+#@return success: 1 if successful, 0 otherwise
 func check_owner{pedersen_ptr : HashBuiltin*, syscall_ptr : felt*, range_check_ptr}() -> (
-    value : felt
+    success : felt
 ):
     let (caller) = get_caller_address()
     let (owner) = Ownable_get_owner()
@@ -263,10 +269,14 @@ func check_owner{pedersen_ptr : HashBuiltin*, syscall_ptr : felt*, range_check_p
     return (0)
 end
 
+#@notice Checks if the caller and owner addresses are not both 0
+#@dev Reverts on failure
 func check_can_action{pedersen_ptr : HashBuiltin*, syscall_ptr : felt*, range_check_ptr}():
     let (caller) = check_caller()
     let (owner) = check_owner()
 
-    assert_not_zero(owner + caller)
+    with_attr error_message("Resources ERC1155: owner and caller are both the 0 address"):
+        assert_not_zero(owner + caller)
+    end
     return ()
 end

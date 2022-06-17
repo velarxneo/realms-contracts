@@ -13,7 +13,7 @@ from starkware.cairo.common.math_cmp import is_le
 from starkware.cairo.common.uint256 import Uint256
 from starkware.starknet.common.syscalls import get_block_timestamp, get_caller_address, get_tx_info
 from contracts.settling_game.interfaces.IERC1155 import IERC1155
-from contracts.settling_game.interfaces.imodules import (
+from contracts.settling_game.interfaces.IModules import (
     IModuleController,
     IL02_Resources,
     IL04_Calculator,

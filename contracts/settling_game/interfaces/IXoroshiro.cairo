@@ -1,7 +1,9 @@
+# ----------------------------------
 # Interface for the Xoroshiro PRNG
-#   Xoroshiro pseudo random number generator interface
+#   Xoroshiro pseudo random number generator interface.
 #
 # MIT License
+# ----------------------------------
 
 %lang starknet
 

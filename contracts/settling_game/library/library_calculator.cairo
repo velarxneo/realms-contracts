@@ -1,8 +1,9 @@
-# CALCULATOR LIBRARY
-#   Helper functions for staking.
-#
+# -----------------------------------
+# Calculator library
+#   Helper functions for staked/settled realms.
 #
 # MIT License
+# -----------------------------------
 
 %lang starknet
 
@@ -12,7 +13,14 @@ from starkware.cairo.common.cairo_builtins import HashBuiltin, BitwiseBuiltin
 from starkware.starknet.common.syscalls import get_block_timestamp
 from starkware.cairo.common.uint256 import Uint256
 
-namespace CALCULATOR:
+namespace Calculator:
+    # @notice Calculates happiness from realm stats
+    # @implicit syscall_ptr
+    # @implicit range_check_ptr
+    # @param culture: Culture stat of a realm
+    # @param population: Population stat of a realm
+    # @param food: Food stat of a realm
+    # @return hapiness (felt): Happiness stat of a realm
     func get_happiness{syscall_ptr : felt*, range_check_ptr}(
         culture : felt, population : felt, food : felt
     ) -> (happiness : felt):
@@ -41,6 +49,7 @@ namespace CALCULATOR:
         if is_greaterthan_threshold == 1:
             return (150)
         end
+
         return (happiness)
     end
 end

@@ -1,8 +1,10 @@
+# ----------------------------------
 # Module Interfaces
 #   These are interfaces that can be imported by other contracts for convenience.
 #   All of the functions in an interface must be @view or @external.
 #
 # MIT License
+# ----------------------------------
 
 %lang starknet
 
@@ -24,7 +26,6 @@ namespace IArbiter:
     end
 end
 
-# Interface for the ModuleController.
 @contract_interface
 namespace IModuleController:
     func get_module_address(module_id : felt) -> (address : felt):
@@ -68,7 +69,7 @@ namespace IModuleController:
 end
 
 @contract_interface
-namespace IL01_Settling:
+namespace IL01Settling:
     func set_time_staked(token_id : Uint256, time_left : felt):
     end
     func set_time_vault_staked(token_id : Uint256, time_left : felt):
@@ -86,7 +87,7 @@ namespace IL01_Settling:
 end
 
 @contract_interface
-namespace IL02_Resources:
+namespace IL02Resources:
     func check_if_claimable(token_id : Uint256) -> (can_claim : felt):
     end
     func claim_resources(token_id : Uint256):
@@ -96,13 +97,13 @@ namespace IL02_Resources:
 end
 
 @contract_interface
-namespace IL03_Buildings:
+namespace IL03Buildings:
     func get_buildings_unpacked(token_id : Uint256) -> (realm_buildings : RealmBuildings):
     end
 end
 
 @contract_interface
-namespace IL04_Calculator:
+namespace IL04Calculator:
     func calculate_epoch() -> (epoch : felt):
     end
     func calculate_happiness(token_id : Uint256) -> (happiness : felt):
@@ -122,7 +123,7 @@ namespace IL04_Calculator:
 end
 
 @contract_interface
-namespace IL05_Wonders:
+namespace IL05Wonders:
     func update_wonder_settlement(token_id : Uint256):
     end
     func set_total_wonders_staked(epoch : felt, amount : felt):
@@ -166,7 +167,7 @@ namespace IL05_Wonders:
 end
 
 @contract_interface
-namespace IL06_Combat:
+namespace IL06Combat:
     func build_squad_from_troops_in_realm(
         troop_ids_len : felt, troop_ids : felt*, realm_id : Uint256, slot : felt
     ):
@@ -180,7 +181,7 @@ namespace IL06_Combat:
 end
 
 @contract_interface
-namespace IL07_Crypts:
+namespace IL07Crypts:
     func set_time_staked(token_id : Uint256, time_left : felt):
     end
     func get_time_staked(token_id : Uint256) -> (time : felt):
@@ -190,7 +191,7 @@ namespace IL07_Crypts:
 end
 
 @contract_interface
-namespace IL08_Crypts_Resources:
+namespace IL08CryptsResources:
     func check_if_claimable(token_id : Uint256) -> (can_claim : felt):
     end
     func claim_resources(token_id : Uint256):
