@@ -21,24 +21,22 @@ from openzeppelin.upgrades.library import (
     Proxy_set_implementation,
 )
 
-from contracts.settling_game.utils.game_structs import (
-    CryptData,
-    EnvironmentProduction,
-)
+from contracts.settling_game.utils.game_structs import CryptData
 from contracts.settling_game.utils.constants import (
     TRUE,
     FALSE,
     DAY,
     RESOURCES_PER_CRYPT,
     LEGENDARY_MULTIPLIER,
-    ModuleIds,
+    EnvironmentProduction,
     ExternalContractIds,
+    ModuleIds,
 )
 from contracts.settling_game.library.library_module import Module
 
 from contracts.settling_game.interfaces.IERC1155 import IERC1155
 from contracts.settling_game.interfaces.ICryptsERC721 import ICryptsERC721
-from contracts.settling_game.interfaces.imodules import IModuleController, IL07Crypts
+from contracts.settling_game.interfaces.IModules import IModuleController, IL07Crypts
 
 
 # -----------------------------------
@@ -52,7 +50,7 @@ from contracts.settling_game.interfaces.imodules import IModuleController, IL07C
 func initializer{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     address_of_controller : felt, proxy_admin : felt
 ):
-    MODULE_initializer(address_of_controller)
+    Module.initializer(address_of_controller)
     Proxy_initializer(proxy_admin)
     return ()
 end
@@ -81,7 +79,7 @@ func claim_resources{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_che
 ):
     alloc_locals
     let (caller) = get_caller_address()
-    let (controller) = Module.get_contract_address()
+    let (controller) = Module.get_controller_address()
 
     # # CONTRACT ADDRESSES
 
@@ -111,7 +109,7 @@ func claim_resources{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_che
     # ALLOW RESOURCE LOGIC ADDRESS TO CLAIM, BUT STILL RESTRICT
     if caller != crypts_logic_address:
         # Allwo users to claim directly
-        MODULE_ERC721_owner_check(token_id, ExternalContractIds.S_Crypts)
+        Module.erc721_owner_check(token_id, ExternalContractIds.StakedCrypts)
         tempvar syscall_ptr = syscall_ptr
         tempvar range_check_ptr = range_check_ptr
         tempvar pedersen_ptr = pedersen_ptr
@@ -175,7 +173,7 @@ end
 func days_accrued{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     token_id : Uint256
 ) -> (days_accrued : felt, remainder : felt):
-    let (controller) = Module.get_contract_address()
+    let (controller) = Module.get_controller_address()
     let (block_timestamp) = get_block_timestamp()
     let (settling_logic_address) = IModuleController.get_module_address(
         controller, ModuleIds.L07Crypts

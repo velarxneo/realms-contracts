@@ -95,9 +95,9 @@ async def _build_copyable_deployment():
     defs = SimpleNamespace(
         account=compile("openzeppelin/account/Account.cairo"),
         lords=compile(
-            "contracts/settling_game/tokens/Lords_ERC20_Mintable.cairo"),
+            "contracts/settling_game/tokens/lords_erc20_mintable.cairo"),
         resources=compile(
-            "contracts/settling_game/tokens/Resources_ERC1155_Mintable_Burnable.cairo"
+            "contracts/settling_game/tokens/resources_erc1155_mintable_burnable.cairo"
         ),
     )
 
@@ -111,7 +111,7 @@ async def _build_copyable_deployment():
         }
     )
 
-    lords = await proxy_builder(compiled_proxy, starknet, signers["admin"], accounts.admin.contract_address, "contracts/settling_game/tokens/Lords_ERC20_Mintable.cairo", [
+    lords = await proxy_builder(compiled_proxy, starknet, signers["admin"], accounts.admin.contract_address, "contracts/settling_game/tokens/lords_erc20_mintable.cairo", [
         str_to_felt("Lords"),
         str_to_felt("LRD"),
         18,
@@ -120,7 +120,7 @@ async def _build_copyable_deployment():
         accounts.admin.contract_address,
     ])
 
-    resources = await proxy_builder(compiled_proxy, starknet, signers["admin"], accounts.admin.contract_address, "contracts/settling_game/tokens/Resources_ERC1155_Mintable_Burnable.cairo", [
+    resources = await proxy_builder(compiled_proxy, starknet, signers["admin"], accounts.admin.contract_address, "contracts/settling_game/tokens/resources_erc1155_mintable_burnable.cairo", [
         1234,
          accounts.admin.contract_address
     ])
@@ -358,7 +358,7 @@ async def ctx_factory_desiege(copyable_deployment_desiege):
 
 @pytest.fixture(scope="session")
 def compiled_proxy():
-    return compile("contracts/settling_game/proxy/PROXY_Logic.cairo")
+    return compile("contracts/settling_game/proxy/proxy_logic.cairo")
 
 async def deploy_contract(starknet, contract, calldata):
     print(contract)
@@ -396,7 +396,7 @@ async def token_factory(account_factory, compiled_proxy):
 
     set_block_timestamp(starknet.state, round(time.time()))
 
-    proxy_lords = await proxy_builder(compiled_proxy, starknet, admin_key, admin_account, "contracts/settling_game/tokens/Lords_ERC20_Mintable.cairo", [
+    proxy_lords = await proxy_builder(compiled_proxy, starknet, admin_key, admin_account, "contracts/settling_game/tokens/lords_erc20_mintable.cairo", [
         str_to_felt("Lords"),
         str_to_felt("LRD"),
         18,
@@ -405,30 +405,30 @@ async def token_factory(account_factory, compiled_proxy):
         treasury_account.contract_address,
     ])
 
-    proxy_realms = await proxy_builder(compiled_proxy, starknet, admin_key, admin_account, "contracts/settling_game/tokens/Realms_ERC721_Mintable.cairo", [
+    proxy_realms = await proxy_builder(compiled_proxy, starknet, admin_key, admin_account, "contracts/settling_game/tokens/realms_erc721_mintable.cairo", [
         str_to_felt("Realms"),  # name
         str_to_felt("Realms"),  # ticker
         admin_account.contract_address,  # contract_owner
     ])
     
-    proxy_crypts = await proxy_builder(compiled_proxy, starknet, admin_key, admin_account, "contracts/settling_game/tokens/Crypts_ERC721_Mintable.cairo", [
+    proxy_crypts = await proxy_builder(compiled_proxy, starknet, admin_key, admin_account, "contracts/settling_game/tokens/crypt_erc721_mintable.cairo", [
         str_to_felt("Crypts"),  # name
         str_to_felt("Crypts"),  # ticker
         admin_account.contract_address,  # contract_owner
     ])
 
-    proxy_resources = await proxy_builder(compiled_proxy, starknet, admin_key, admin_account, "contracts/settling_game/tokens/Resources_ERC1155_Mintable_Burnable.cairo", [
+    proxy_resources = await proxy_builder(compiled_proxy, starknet, admin_key, admin_account, "contracts/settling_game/tokens/resources_erc1155_mintable_burnable.cairo", [
         1234,
         admin_account.contract_address
     ])
 
-    proxy_s_realms = await proxy_builder(compiled_proxy, starknet, admin_key, admin_account, "contracts/settling_game/tokens/S_Realms_ERC721_Mintable.cairo", [
+    proxy_s_realms = await proxy_builder(compiled_proxy, starknet, admin_key, admin_account, "contracts/settling_game/tokens/realms_erc721_stakeable.cairo", [
         str_to_felt("S_Realms"),  # name
         str_to_felt("S_Realms"),  # ticker
         admin_account.contract_address,  # contract_owner
     ])
 
-    proxy_s_crypts = await proxy_builder(compiled_proxy, starknet, admin_key, admin_account, "contracts/settling_game/tokens/S_Crypts_ERC721_Mintable.cairo", [
+    proxy_s_crypts = await proxy_builder(compiled_proxy, starknet, admin_key, admin_account, "contracts/settling_game/tokens/crypts_erc721_stakeable.cairo", [
         str_to_felt("S_Crypts"),  # name
         str_to_felt("S_Crypts"),  # ticker
         admin_account.contract_address,  # contract_owner
@@ -540,7 +540,7 @@ async def game_factory(token_factory, compiled_proxy):
     await admin_key.send_transaction(
         account=admin_account,
         to=s_realms.contract_address,
-        selector_name='Set_module_access',
+        selector_name='set_module_access',
         calldata=[settling_logic.contract_address],
     )
 
@@ -548,7 +548,7 @@ async def game_factory(token_factory, compiled_proxy):
     await admin_key.send_transaction(
         account=admin_account,
         to=s_crypts.contract_address,
-        selector_name='Set_module_access',
+        selector_name='set_module_access',
         calldata=[crypts_logic.contract_address],
     )
 
@@ -556,7 +556,7 @@ async def game_factory(token_factory, compiled_proxy):
     await admin_key.send_transaction(
         account=admin_account,
         to=resources.contract_address,
-        selector_name='Set_module_access',
+        selector_name='set_module_access',
         calldata=[resources_logic.contract_address],
     )
 
@@ -564,7 +564,7 @@ async def game_factory(token_factory, compiled_proxy):
     await admin_key.send_transaction(
         account=admin_account,
         to=resources.contract_address,
-        selector_name='Set_module_access',
+        selector_name='set_module_access',
         calldata=[crypts_resources_logic.contract_address],
     )
 

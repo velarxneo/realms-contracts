@@ -3,7 +3,7 @@ import { deployContract, getDeployedAddressInt, getOwnerAccountInt } from '../..
 import { toFelt } from 'starknet/dist/utils/number'
 
 async function main() {
-    const contractName = 'Resources_ERC1155_Mintable_Burnable'
+    const contractName = 'resources_erc1155_mintable_burnable'
 
     // Collect params
     const ownerAccount = getOwnerAccountInt()

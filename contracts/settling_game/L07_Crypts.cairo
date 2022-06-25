@@ -22,12 +22,10 @@ from openzeppelin.upgrades.library import (
     Proxy_set_implementation,
 )
 
-from contracts.settling_game.utils.game_structs import ModuleIds, ExternalContractIds
-from contracts.settling_game.utils.constants import TRUE
+from contracts.settling_game.utils.constants import TRUE, ModuleIds, ExternalContractIds
 from contracts.settling_game.library.library_module import Module
 from contracts.settling_game.interfaces.IStakedCryptsERC721 import IStakedCryptsERC721
-from contracts.settling_game.interfaces.imodules import IModuleController, IL08CryptsResources
-
+from contracts.settling_game.interfaces.IModules import IModuleController, IL08CryptsResources
 
 # -----------------------------------
 # EVENTS
@@ -65,7 +63,7 @@ end
 func initializer{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     address_of_controller : felt, proxy_admin : felt
 ):
-    MODULE_initializer(address_of_controller)
+    Module.initializer(address_of_controller)
     Proxy_initializer(proxy_admin)
     return ()
 end
@@ -95,7 +93,7 @@ func settle{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
 ) -> (success : felt):
     alloc_locals
     let (caller) = get_caller_address()
-    let (controller) = Module.get_contract_address()
+    let (controller) = Module.get_controller_address()
     let (contract_address) = get_contract_address()
 
     let (crypts_address) = IModuleController.get_external_contract_address(
@@ -129,7 +127,7 @@ func unsettle{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}
 ) -> (success : felt):
     alloc_locals
     let (caller) = get_caller_address()
-    let (controller) = Module.get_contract_address()
+    let (controller) = Module.get_controller_address()
     let (contract_address) = get_contract_address()
 
     # FETCH ADDRESSES
@@ -145,7 +143,7 @@ func unsettle{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}
     )
 
     # CHECK NO PENDING RESOURCES
-    let (can_claim) = IL08CryptRResources.check_if_claimable(resource_logic_address, token_id)
+    let (can_claim) = IL08CryptsResources.check_if_claimable(resource_logic_address, token_id)
 
     if can_claim == TRUE:
         IL08CryptsResources.claim_resources(resource_logic_address, token_id)

@@ -50,7 +50,7 @@ func set_address_of_controller{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*,
     Ownable_only_owner()
     let (locked) = lock.read()
     # Locked starts as zero
-    with_attr error_message("Arbiter: owner/arbiter address is locked")
+    with_attr error_message("Arbiter: owner/arbiter address is locked"):
         assert_not_zero(1 - locked)
     end
     lock.write(1)

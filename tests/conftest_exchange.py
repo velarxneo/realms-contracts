@@ -70,7 +70,7 @@ async def token_factory(account_factory, compiled_proxy):
 
     set_block_timestamp(starknet.state, round(time.time()))
 
-    proxy_lords = await proxy_builder(compiled_proxy, starknet, admin_key, admin_account, "contracts/settling_game/tokens/Lords_ERC20_Mintable.cairo", [
+    proxy_lords = await proxy_builder(compiled_proxy, starknet, admin_key, admin_account, "contracts/settling_game/tokens/lords_erc20_mintable.cairo", [
         str_to_felt("Lords"),
         str_to_felt("LRD"),
         18,
@@ -79,7 +79,7 @@ async def token_factory(account_factory, compiled_proxy):
         treasury_account.contract_address,
     ])
 
-    proxy_resources = await proxy_builder(compiled_proxy, starknet, admin_key, admin_account, "contracts/settling_game/tokens/Resources_ERC1155_Mintable_Burnable.cairo", [
+    proxy_resources = await proxy_builder(compiled_proxy, starknet, admin_key, admin_account, "contracts/settling_game/tokens/resources_erc1155_mintable_burnable.cairo", [
         1234,
         admin_account.contract_address
     ])

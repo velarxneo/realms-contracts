@@ -7,10 +7,10 @@ async function main() {
   const ownerAccount = getOwnerAccountInt()
   // Collect params
   const arbiter = getDeployedAddressInt("Arbiter");
-  const realms = getDeployedAddressInt("Realms_ERC721_Mintable");
-  const s_realms = getDeployedAddressInt("S_Realms_ERC721_Mintable");
-  const lords = getDeployedAddressInt("ERC20_Mintable");
-  const resources = getDeployedAddressInt("Resources_ERC1155_Mintable_Burnable");
+  const realms = getDeployedAddressInt("realms_erc721_mintable");
+  const s_realms = getDeployedAddressInt("realms_erc721_stakeable");
+  const lords = getDeployedAddressInt("lords_erc20_mintable");
+  const resources = getDeployedAddressInt("resources_erc1155_mintable_burnable");
   const storage = getDeployedAddressInt("Storage");
   console.log(arbiter)
   console.log(lords)

@@ -1,9 +1,9 @@
 import { deployContract, getDeployedAddressInt, getOwnerAccountInt, getSigner } from '../../helpers'
 
 async function main() {
-    const contractName = 'S_Realms_ERC721_Mintable'
+    const contractName = 'realms_erc721_stakeable'
 
-    const S_Realms_ERC721_Mintable = getDeployedAddressInt('S_Realms_ERC721_Mintable');
+    const S_Realms_ERC721_Mintable = getDeployedAddressInt('realms_erc721_stakeable');
     // Collect params
     const L01_Settling = getDeployedAddressInt("L01_Settling"); // module id 1
 

@@ -99,17 +99,17 @@ func test_full_deploy{syscall_ptr : felt*, range_check_ptr}():
     %{ ids.Account = deploy_contract("./openzeppelin/account/Account.cairo", [123456]).contract_address %}
 
     # %{ print("lords") %}
-    # %{ ids.lords = deploy_contract("./contracts/settling_game/tokens/Lords_ERC20_Mintable.cairo", []).contract_address %}
-    # %{ ids.proxy_lords = deploy_contract("./contracts/settling_game/proxy/PROXY_Logic.cairo", [ids.lords]).contract_address %}
+    # %{ ids.lords = deploy_contract("./contracts/settling_game/tokens/lords_erc20_mintable.cairo", []).contract_address %}
+    # %{ ids.proxy_lords = deploy_contract("./contracts/settling_game/proxy/proxy_logic.cairo", [ids.lords]).contract_address %}
 
     # %{ print("resources") %}
-    # %{ ids.resources = deploy_contract("./contracts/settling_game/tokens/Resources_ERC1155_Mintable_Burnable.cairo", []).contract_address %}
-    # %{ ids.proxy_resources = deploy_contract("./contracts/settling_game/proxy/PROXY_Logic.cairo", [ids.resources]).contract_address %}
+    # %{ ids.resources = deploy_contract("./contracts/settling_game/tokens/resources_erc1155_mintable_burnable.cairo", []).contract_address %}
+    # %{ ids.proxy_resources = deploy_contract("./contracts/settling_game/proxy/proxy_logic.cairo", [ids.resources]).contract_address %}
     # IResources.initializer(proxy_resources, 1234, Account)
 
     %{ print("AMM") %}
     %{ ids.ERC1155_AMM = deploy_contract("./contracts/exchange/Exchange_ERC20_1155.cairo", []).contract_address %}
-    %{ ids.proxy_ERC1155_AMM = deploy_contract("./contracts/settling_game/proxy/PROXY_Logic.cairo", [ids.ERC1155_AMM]).contract_address %}
+    %{ ids.proxy_ERC1155_AMM = deploy_contract("./contracts/settling_game/proxy/proxy_logic.cairo", [ids.ERC1155_AMM]).contract_address %}
     # IAMM.initializer(
     #     proxy_ERC1155_AMM,
     #     proxy_lords,

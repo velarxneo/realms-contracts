@@ -5,7 +5,7 @@ from openzeppelin.tests.utils import Signer, uint, str_to_felt, from_uint, felt_
 import time
 from enum import IntEnum
 
-from realms_cli.realms_cli.binary_converter import map_realm
+from realms_cli.binary_converter import map_realm
 
 from .game_structs import BUILDING_COSTS, RESOURCE_UPGRADE_COST
 

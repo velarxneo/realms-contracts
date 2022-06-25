@@ -83,23 +83,23 @@ end
 #     %{ ids.Account = deploy_contract("./openzeppelin/account/Account.cairo", [123456]).contract_address %}
 
 #     %{ print("lords") %}
-#     %{ ids.lords = deploy_contract("./contracts/settling_game/tokens/Lords_ERC20_Mintable.cairo", []).contract_address %}
-#     %{ ids.proxy_lords = deploy_contract("./contracts/settling_game/proxy/PROXY_Logic.cairo", [ids.lords]).contract_address %}
+#     %{ ids.lords = deploy_contract("./contracts/settling_game/tokens/lords_erc20_mintable.cairo", []).contract_address %}
+#     %{ ids.proxy_lords = deploy_contract("./contracts/settling_game/proxy/proxy_logic.cairo", [ids.lords]).contract_address %}
 #     LordsInterface.initializer(proxy_lords, 1234, 1234, 18, Uint256(50000, 0), Account, Account)
 
 #     %{ print("realms") %}
-#     %{ ids.realms = deploy_contract("./contracts/settling_game/tokens/Realms_ERC721_Mintable.cairo", []).contract_address %}
-#     %{ ids.proxy_realms = deploy_contract("./contracts/settling_game/proxy/PROXY_Logic.cairo", [ids.realms]).contract_address %}
+#     %{ ids.realms = deploy_contract("./contracts/settling_game/tokens/realms_erc721_mintable.cairo", []).contract_address %}
+#     %{ ids.proxy_realms = deploy_contract("./contracts/settling_game/proxy/proxy_logic.cairo", [ids.realms]).contract_address %}
 #     RealmsInterface.initializer(proxy_realms, 1234, 1234, Account)
 
 #     %{ print("s_realms") %}
-#     %{ ids.s_realms = deploy_contract("./contracts/settling_game/tokens/S_Realms_ERC721_Mintable.cairo", []).contract_address %}
-#     %{ ids.proxy_s_realms = deploy_contract("./contracts/settling_game/proxy/PROXY_Logic.cairo", [ids.s_realms]).contract_address %}
+#     %{ ids.s_realms = deploy_contract("./contracts/settling_game/tokens/realms_erc721_stakeable.cairo", []).contract_address %}
+#     %{ ids.proxy_s_realms = deploy_contract("./contracts/settling_game/proxy/proxy_logic.cairo", [ids.s_realms]).contract_address %}
 #     RealmsInterface.initializer(proxy_s_realms, 1234, 1234, Account)
 
 #     %{ print("resources") %}
-#     %{ ids.resources = deploy_contract("./contracts/settling_game/tokens/Resources_ERC1155_Mintable_Burnable.cairo", []).contract_address %}
-#     %{ ids.proxy_resources = deploy_contract("./contracts/settling_game/proxy/PROXY_Logic.cairo", [ids.resources]).contract_address %}
+#     %{ ids.resources = deploy_contract("./contracts/settling_game/tokens/resources_erc1155_mintable_burnable.cairo", []).contract_address %}
+#     %{ ids.proxy_resources = deploy_contract("./contracts/settling_game/proxy/proxy_logic.cairo", [ids.resources]).contract_address %}
 #     ResourcesInterface.initializer(proxy_resources, 1234, Account)
 
 #     # GAME CONTROLLERS
@@ -108,22 +108,22 @@ end
 
 #     # GAME MODULES
 #     %{ ids.L01_Settling = deploy_contract("./contracts/settling_game/L01_Settling.cairo", []).contract_address %}
-#     %{ ids.L01_Proxy_Settling = deploy_contract("./contracts/settling_game/proxy/PROXY_Logic.cairo", [ids.L01_Settling]).contract_address %}
+#     %{ ids.L01_Proxy_Settling = deploy_contract("./contracts/settling_game/proxy/proxy_logic.cairo", [ids.L01_Settling]).contract_address %}
 
 #     %{ ids.L02_Resources = deploy_contract("./contracts/settling_game/L02_Resources.cairo", []).contract_address %}
-#     %{ ids.L02_Proxy_Resources = deploy_contract("./contracts/settling_game/proxy/PROXY_Logic.cairo", [ids.L02_Resources]).contract_address %}
+#     %{ ids.L02_Proxy_Resources = deploy_contract("./contracts/settling_game/proxy/proxy_logic.cairo", [ids.L02_Resources]).contract_address %}
 
 #     %{ ids.L03_Buildings = deploy_contract("./contracts/settling_game/L03_Buildings.cairo", []).contract_address %}
-#     %{ ids.L03_Proxy_Buildings = deploy_contract("./contracts/settling_game/proxy/PROXY_Logic.cairo", [ids.L03_Buildings]).contract_address %}
+#     %{ ids.L03_Proxy_Buildings = deploy_contract("./contracts/settling_game/proxy/proxy_logic.cairo", [ids.L03_Buildings]).contract_address %}
 
 #     %{ ids.L04_Calculator = deploy_contract("./contracts/settling_game/L04_Calculator.cairo", []).contract_address %}
-#     %{ ids.L04_Proxy_Calculator = deploy_contract("./contracts/settling_game/proxy/PROXY_Logic.cairo", [ids.L04_Calculator]).contract_address %}
+#     %{ ids.L04_Proxy_Calculator = deploy_contract("./contracts/settling_game/proxy/proxy_logic.cairo", [ids.L04_Calculator]).contract_address %}
 
 #     %{ ids.L05_Wonders = deploy_contract("./contracts/settling_game/L05_Wonders.cairo", []).contract_address %}
-#     %{ ids.L05_Proxy_Wonders = deploy_contract("./contracts/settling_game/proxy/PROXY_Logic.cairo", [ids.L05_Wonders]).contract_address %}
+#     %{ ids.L05_Proxy_Wonders = deploy_contract("./contracts/settling_game/proxy/proxy_logic.cairo", [ids.L05_Wonders]).contract_address %}
 
 #     %{ ids.L06_Combat = deploy_contract("./contracts/settling_game/L06_Combat.cairo", []).contract_address %}
-#     %{ ids.L06_Proxy_Combat = deploy_contract("./contracts/settling_game/proxy/PROXY_Logic.cairo", [ids.L06_Combat]).contract_address %}
+#     %{ ids.L06_Proxy_Combat = deploy_contract("./contracts/settling_game/proxy/proxy_logic.cairo", [ids.L06_Combat]).contract_address %}
 
 #     # batch set all controllers
 #     IArbiter.batch_set_controller_addresses(Arbiter, L01_Proxy_Settling, L02_Proxy_Resources, L03_Proxy_Buildings, L04_Proxy_Calculator, L05_Proxy_Wonders, L06_Proxy_Combat)

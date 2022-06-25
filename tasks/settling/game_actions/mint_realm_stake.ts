@@ -8,7 +8,7 @@ async function main() {
     const ownerAccount = getOwnerAccountInt()
     // Collect params
     // const L01_Settling = getDeployedAddressInt("L01_Settling"); // module id 1
-    const Realms_ERC721_Mintable = getDeployedAddressInt("Realms_ERC721_Mintable"); // module id 1
+    const Realms_ERC721_Mintable = getDeployedAddressInt("realms_erc721_mintable"); // module id 1
 
     const realm: Uint256 = bnToUint256("3")
 

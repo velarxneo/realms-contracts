@@ -28,7 +28,7 @@ func test_combat{syscall_ptr : felt*, range_check_ptr}():
     local L06_Proxy_Combat : felt
 
     %{ ids.L06_Combat = deploy_contract("./contracts/settling_game/L06_Combat.cairo", []).contract_address %}
-    %{ ids.L06_Proxy_Combat = deploy_contract("./contracts/settling_game/proxy/PROXY_Logic.cairo", [ids.L06_Combat]).contract_address %}
+    %{ ids.L06_Proxy_Combat = deploy_contract("./contracts/settling_game/proxy/proxy_logic.cairo", [ids.L06_Combat]).contract_address %}
 
     IL06_Combat.set_troop_cost(L06_Proxy_Combat, 1, Cost(3, 8, 262657, 328450))
     IL06_Combat.set_troop_cost(L06_Proxy_Combat, 2, Cost(3, 8, 262657, 656900))

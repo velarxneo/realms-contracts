@@ -55,7 +55,7 @@ from contracts.settling_game.utils.constants import (
 from contracts.settling_game.interfaces.IERC1155 import IERC1155
 from contracts.settling_game.interfaces.IRealmsERC721 import IRealmsERC721
 from contracts.settling_game.interfaces.IStakedRealmsERC721 import IStakedRealmsERC721
-from contracts.settling_game.interfaces.imodules import IModuleController
+from contracts.settling_game.interfaces.IModules import IModuleController
 from contracts.settling_game.library.library_module import Module
 
 # -----------------------------------
