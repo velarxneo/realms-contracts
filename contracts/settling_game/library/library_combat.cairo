@@ -25,9 +25,9 @@ from contracts.settling_game.utils.game_structs import (
     PackedSquad,
     SquadStats,
     Troop,
-    TroopType,
-    TroopId,
 )
+
+from contracts.settling_game.utils.constants import TroopId, TroopType
 
 # used for packing
 const SHIFT = 0x100

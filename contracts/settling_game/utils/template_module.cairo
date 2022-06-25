@@ -11,15 +11,14 @@
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.starknet.common.syscalls import get_caller_address
 
-from contracts.settling_game.interfaces.IModules import IModuleController
-
-from contracts.settling_game.library.library_module import Module
-
 from openzeppelin.upgrades.library import (
     Proxy_initializer,
     Proxy_only_admin,
     Proxy_set_implementation,
 )
+
+from contracts.settling_game.interfaces.IModules import IModuleController
+from contracts.settling_game.library.library_module import Module
 
 # ____MODULE_XXX___BUILDING_STATE
 #
@@ -43,6 +42,9 @@ from openzeppelin.upgrades.library import (
 # CONSTRUCTOR #
 #-----------------------------------
 
+#@notice Module initializer
+#@param address_of_controller: Controller/arbiter address
+#@proxy_admin: Proxy admin address
 @external
 func initializer{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     address_of_controller : felt, proxy_admin : felt
@@ -52,12 +54,13 @@ func initializer{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_p
     return ()
 end
 
-
-
 #-----------------------------------
 # EXTERNAL #
 #-----------------------------------
 
+#@notice Set new proxy implementation
+#@dev Can only be set by the arbiter
+#@param new_implementation: New implementation contract address
 @external
 func upgrade{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     new_implementation : felt
@@ -67,7 +70,9 @@ func upgrade{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     return ()
 end
 
-# Called by another module to update a global variable.
+#@notice alled by another module to update a global variable
+#@dev Can only be set by the arbiter
+#@param new_implementation: New implementation contract address
 @external
 func update_value{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
     # TODO Customise.

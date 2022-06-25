@@ -1,3 +1,4 @@
+# -----------------------------------
 # ____MODULE_L04___CONTRACT_LOGIC
 #   This modules focus is to calculate the values of the internal
 #   multipliers so other modules can use them. The aim is to have this
@@ -5,6 +6,7 @@
 #   It is pure math.
 #
 # MIT License
+# -----------------------------------
 
 %lang starknet
 
@@ -14,53 +16,53 @@ from starkware.cairo.common.math_cmp import is_nn_le, is_nn, is_le
 from starkware.starknet.common.syscalls import get_block_timestamp
 from starkware.cairo.common.uint256 import Uint256
 
-from contracts.settling_game.utils.game_structs import (
-    RealmBuildings,
-    ModuleIds,
-    BuildingsFood,
-    BuildingsPopulation,
-    BuildingsCulture,
-    RealmCombatData,
-)
-
-from contracts.settling_game.utils.constants import VAULT_LENGTH_SECONDS, BASE_LORDS_PER_DAY
-
-from contracts.settling_game.interfaces.imodules import (
-    IModuleController,
-    IL01_Settling,
-    IL03_Buildings,
-    IL06_Combat,
-)
-
-from contracts.settling_game.library.library_module import (
-    MODULE_controller_address,
-    MODULE_only_approved,
-    MODULE_initializer,
-)
-
-from contracts.settling_game.library.library_calculator import CALCULATOR
-
 from openzeppelin.upgrades.library import (
     Proxy_initializer,
     Proxy_only_admin,
     Proxy_set_implementation,
 )
 
-from contracts.settling_game.library.library_combat import COMBAT
+from contracts.settling_game.utils.game_structs import (
+    RealmBuildings,
+    RealmCombatData,
+)
+from contracts.settling_game.utils.constants import (
+    BASE_LORDS_PER_DAY,
+    VAULT_LENGTH_SECONDS,
+    ModuleIds,
+    BuildingFoodEffect,
+    BuildingPopulationEffect,
+    BuildingCultureEffect,
+)
+from contracts.settling_game.interfaces.IModules import (
+    IModuleController,
+    IL01Settling,
+    IL03Buildings,
+    IL06Combat,
+)
+from contracts.settling_game.library.library_module import Module
+from contracts.settling_game.library.library_calculator import Calculator
+from contracts.settling_game.library.library_combat import Combat
 
-###############
-# CONSTRUCTOR #
-###############
+# -----------------------------------
+# CONSTRUCTOR
+# -----------------------------------
 
+#@notice Module initializer
+#@param address_of_controller: Controller/arbiter address
+#@proxy_admin: Proxy admin address
 @external
 func initializer{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     address_of_controller : felt, proxy_admin : felt
 ):
-    MODULE_initializer(address_of_controller)
+    Module.initializer(address_of_controller)
     Proxy_initializer(proxy_admin)
     return ()
 end
 
+#@notice Set new proxy implementation
+#@dev Can only be set by the arbiter
+#@param new_implementation: New implementation contract address
 @external
 func upgrade{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     new_implementation : felt
@@ -70,16 +72,18 @@ func upgrade{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     return ()
 end
 
-###############
+# -----------------------------------
 # CALCULATORS #
-###############
+# -----------------------------------
 
+#@notice Calculate epoch
+#@return Epoch
 @view
 func calculate_epoch{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}() -> (
     epoch : felt
 ):
     # CALCULATE EPOCH
-    let (controller) = MODULE_controller_address()
+    let (controller) = Module.get_controller_address()
     let (genesis_time_stamp) = IModuleController.get_genesis(controller)
     let (block_timestamp) = get_block_timestamp()
 
@@ -87,6 +91,9 @@ func calculate_epoch{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_che
     return (epoch=epoch)
 end
 
+#@notice Calculate happiness
+#@param token_id: Staked realm token id
+#@return happiness: Happiness stat
 @view
 func calculate_happiness{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     token_id : Uint256
@@ -99,11 +106,14 @@ func calculate_happiness{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range
     let (food) = calculate_food(token_id)
 
     # GET HAPPINESS
-    let (happiness) = CALCULATOR.get_happiness(culture, population, food)
+    let (happiness) = Calculator.get_happiness(culture, population, food)
 
     return (happiness)
 end
 
+#@notice Calculate troop population
+#@param token_id: Staked realm token id
+#@return troop_population: Troop population
 @view
 func calculate_troop_population{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     token_id : Uint256
@@ -111,9 +121,9 @@ func calculate_troop_population{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*
     alloc_locals
 
     # SUM TOTAL TROOP POPULATION
-    # let (controller) = MODULE_controller_address()
+    # let (controller) = Module.get_controller_address()
     # let (combat_logic) = IModuleController.get_module_address(controller, ModuleIds.L06_Combat)
-    # let (realm_combat_data : RealmCombatData) = IL06_Combat.get_realm_combat_data(
+    # let (realm_combat_data : RealmCombatData) = IL06Combat.get_realm_combat_data(
     #     combat_logic, token_id
     # )
 
@@ -123,45 +133,51 @@ func calculate_troop_population{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*
     return (0)
 end
 
+#@notice Calculate culture
+#@param token_id: Staked realm token id
+#@return culture: Culture stat
 @view
 func calculate_culture{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     token_id : Uint256
 ) -> (culture : felt):
     # SUM TOTAL CULTURE
-    let (controller) = MODULE_controller_address()
+    let (controller) = Module.get_controller_address()
     let (buildings_logic_address) = IModuleController.get_module_address(
-        contract_address=controller, module_id=ModuleIds.L03_Buildings
+        contract_address=controller, module_id=ModuleIds.L03Buildings
     )
-    let (current_buildings : RealmBuildings) = IL03_Buildings.get_buildings_unpacked(
+    let (current_buildings : RealmBuildings) = IL03Buildings.get_buildings_unpacked(
         buildings_logic_address, token_id
     )
 
-    let CastleCulture = BuildingsCulture.Castle * current_buildings.Castle
-    let FairgroundsCulture = BuildingsCulture.Fairgrounds * current_buildings.Fairgrounds
-    let RoyalReserveCulture = BuildingsCulture.RoyalReserve * current_buildings.RoyalReserve
-    let GrandMarketCulture = BuildingsCulture.GrandMarket * current_buildings.GrandMarket
-    let GuildCulture = BuildingsCulture.Guild * current_buildings.Guild
-    let OfficerAcademyCulture = BuildingsCulture.OfficerAcademy * current_buildings.OfficerAcademy
-    let GranaryCulture = BuildingsCulture.Granary * current_buildings.Granary
-    let HousingCulture = BuildingsCulture.Housing * current_buildings.Housing
-    let AmphitheaterCulture = BuildingsCulture.Amphitheater * current_buildings.Amphitheater
-    let ArcherTowerCulture = BuildingsCulture.ArcherTower * current_buildings.ArcherTower
-    let SchoolCulture = BuildingsCulture.School * current_buildings.School
-    let MageTowerCulture = BuildingsCulture.MageTower * current_buildings.MageTower
-    let TradeOfficeCulture = BuildingsCulture.TradeOffice * current_buildings.TradeOffice
-    let ArchitectCulture = BuildingsCulture.Architect * current_buildings.Architect
-    let ParadeGroundsCulture = BuildingsCulture.ParadeGrounds * current_buildings.ParadeGrounds
-    let BarracksCulture = BuildingsCulture.Barracks * current_buildings.Barracks
-    let DockCulture = BuildingsCulture.Dock * current_buildings.Dock
-    let FishmongerCulture = BuildingsCulture.Fishmonger * current_buildings.Fishmonger
-    let FarmsCulture = BuildingsCulture.Farms * current_buildings.Farms
-    let HamletCulture = BuildingsCulture.Hamlet * current_buildings.Hamlet
+    let CastleCulture = BuildingCultureEffect.Castle * current_buildings.castle
+    let FairgroundsCulture = BuildingCultureEffect.Fairgrounds * current_buildings.fairgrounds
+    let RoyalReserveCulture = BuildingCultureEffect.RoyalReserve * current_buildings.royal_reserve
+    let GrandMarketCulture = BuildingCultureEffect.GrandMarket * current_buildings.grand_market
+    let GuildCulture = BuildingCultureEffect.Guild * current_buildings.guild
+    let OfficerAcademyCulture = BuildingCultureEffect.OfficerAcademy * current_buildings.officer_academy
+    let GranaryCulture = BuildingCultureEffect.Granary * current_buildings.granary
+    let HousingCulture = BuildingCultureEffect.Housing * current_buildings.housing
+    let AmphitheaterCulture = BuildingCultureEffect.Amphitheater * current_buildings.amphitheater
+    let ArcherTowerCulture = BuildingCultureEffect.ArcherTower * current_buildings.archer_tower
+    let SchoolCulture = BuildingCultureEffect.School * current_buildings.school
+    let MageTowerCulture = BuildingCultureEffect.MageTower * current_buildings.mage_tower
+    let TradeOfficeCulture = BuildingCultureEffect.TradeOffice * current_buildings.trade_office
+    let ArchitectCulture = BuildingCultureEffect.Architect * current_buildings.architect
+    let ParadeGroundsCulture = BuildingCultureEffect.ParadeGrounds * current_buildings.parade_grounds
+    let BarracksCulture = BuildingCultureEffect.Barracks * current_buildings.barracks
+    let DockCulture = BuildingCultureEffect.Dock * current_buildings.dock
+    let FishmongerCulture = BuildingCultureEffect.Fishmonger * current_buildings.fishmonger
+    let FarmsCulture = BuildingCultureEffect.Farms * current_buildings.farms
+    let HamletCulture = BuildingCultureEffect.Hamlet * current_buildings.hamlet
 
     let culture = 10 + CastleCulture + FairgroundsCulture + RoyalReserveCulture + GrandMarketCulture + GuildCulture + OfficerAcademyCulture + GranaryCulture + HousingCulture + AmphitheaterCulture + ArcherTowerCulture + SchoolCulture + MageTowerCulture + TradeOfficeCulture + ArchitectCulture + ParadeGroundsCulture + BarracksCulture + DockCulture + FishmongerCulture + FarmsCulture + HamletCulture
 
     return (culture)
 end
 
+#@notice Calculate population
+#@param token_id: Staked realm token id
+#@return population: Population stat
 @view
 func calculate_population{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     token_id : Uint256
@@ -169,34 +185,34 @@ func calculate_population{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, rang
     alloc_locals
 
     # SUM TOTAL POPULATION
-    let (controller) = MODULE_controller_address()
+    let (controller) = Module.get_controller_address()
     let (buildings_logic_address) = IModuleController.get_module_address(
-        contract_address=controller, module_id=ModuleIds.L03_Buildings
+        contract_address=controller, module_id=ModuleIds.L03Buildings
     )
-    let (current_buildings : RealmBuildings) = IL03_Buildings.get_buildings_unpacked(
+    let (current_buildings : RealmBuildings) = IL03Buildings.get_buildings_unpacked(
         buildings_logic_address, token_id
     )
 
-    let CastlePop = BuildingsPopulation.Castle * current_buildings.Castle
-    let FairgroundsPop = BuildingsPopulation.Fairgrounds * current_buildings.Fairgrounds
-    let RoyalReservePop = BuildingsPopulation.RoyalReserve * current_buildings.RoyalReserve
-    let GrandMarketPop = BuildingsPopulation.GrandMarket * current_buildings.GrandMarket
-    let GuildPop = BuildingsPopulation.Guild * current_buildings.Guild
-    let OfficerAcademyPop = BuildingsPopulation.OfficerAcademy * current_buildings.OfficerAcademy
-    let GranaryPop = BuildingsPopulation.Granary * current_buildings.Granary
-    let HousingPop = BuildingsPopulation.Housing * current_buildings.Housing
-    let AmphitheaterPop = BuildingsPopulation.Amphitheater * current_buildings.Amphitheater
-    let ArcherTowerPop = BuildingsPopulation.ArcherTower * current_buildings.ArcherTower
-    let SchoolPop = BuildingsPopulation.School * current_buildings.School
-    let MageTowerPop = BuildingsPopulation.MageTower * current_buildings.MageTower
-    let TradeOfficePop = BuildingsPopulation.TradeOffice * current_buildings.TradeOffice
-    let ArchitectPop = BuildingsPopulation.Architect * current_buildings.Architect
-    let ParadeGroundsPop = BuildingsPopulation.ParadeGrounds * current_buildings.ParadeGrounds
-    let BarracksPop = BuildingsPopulation.Barracks * current_buildings.Barracks
-    let DockPop = BuildingsPopulation.Dock * current_buildings.Dock
-    let FishmongerPop = BuildingsPopulation.Fishmonger * current_buildings.Fishmonger
-    let FarmsPop = BuildingsPopulation.Farms * current_buildings.Farms
-    let HamletPop = BuildingsPopulation.Hamlet * current_buildings.Hamlet
+    let CastlePop = BuildingPopulationEffect.Castle * current_buildings.castle
+    let FairgroundsPop = BuildingPopulationEffect.Fairgrounds * current_buildings.fairgrounds
+    let RoyalReservePop = BuildingPopulationEffect.RoyalReserve * current_buildings.royal_reserve
+    let GrandMarketPop = BuildingPopulationEffect.GrandMarket * current_buildings.grand_market
+    let GuildPop = BuildingPopulationEffect.Guild * current_buildings.guild
+    let OfficerAcademyPop = BuildingPopulationEffect.OfficerAcademy * current_buildings.officer_academy
+    let GranaryPop = BuildingPopulationEffect.Granary * current_buildings.granary
+    let HousingPop = BuildingPopulationEffect.Housing * current_buildings.housing
+    let AmphitheaterPop = BuildingPopulationEffect.Amphitheater * current_buildings.amphitheater
+    let ArcherTowerPop = BuildingPopulationEffect.ArcherTower * current_buildings.archer_tower
+    let SchoolPop = BuildingPopulationEffect.School * current_buildings.school
+    let MageTowerPop = BuildingPopulationEffect.MageTower * current_buildings.mage_tower
+    let TradeOfficePop = BuildingPopulationEffect.TradeOffice * current_buildings.trade_office
+    let ArchitectPop = BuildingPopulationEffect.Architect * current_buildings.architect
+    let ParadeGroundsPop = BuildingPopulationEffect.ParadeGrounds * current_buildings.parade_grounds
+    let BarracksPop = BuildingPopulationEffect.Barracks * current_buildings.barracks
+    let DockPop = BuildingPopulationEffect.Dock * current_buildings.dock
+    let FishmongerPop = BuildingPopulationEffect.Fishmonger * current_buildings.fishmonger
+    let FarmsPop = BuildingPopulationEffect.Farms * current_buildings.farms
+    let HamletPop = BuildingPopulationEffect.Hamlet * current_buildings.hamlet
 
     let population = 100 + CastlePop + FairgroundsPop + RoyalReservePop + GrandMarketPop + GuildPop + OfficerAcademyPop + GranaryPop + HousingPop + AmphitheaterPop + ArcherTowerPop + SchoolPop + MageTowerPop + TradeOfficePop + ArchitectPop + ParadeGroundsPop + BarracksPop + DockPop + FishmongerPop + FarmsPop + HamletPop
 
@@ -206,6 +222,9 @@ func calculate_population{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, rang
     return (population - troop_population)
 end
 
+#@notice Calculate food
+#@param token_id: Staked realm token id
+#@return food: Food stat
 @view
 func calculate_food{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     token_id : Uint256
@@ -213,34 +232,34 @@ func calculate_food{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_chec
     alloc_locals
 
     # CALCULATE FOOD
-    let (controller) = MODULE_controller_address()
+    let (controller) = Module.get_controller_address()
     let (buildings_logic_address) = IModuleController.get_module_address(
-        contract_address=controller, module_id=ModuleIds.L03_Buildings
+        contract_address=controller, module_id=ModuleIds.L03Buildings
     )
-    let (current_buildings : RealmBuildings) = IL03_Buildings.get_buildings_unpacked(
+    let (current_buildings : RealmBuildings) = IL03Buildings.get_buildings_unpacked(
         buildings_logic_address, token_id
     )
 
-    let CastleFood = BuildingsFood.Castle * current_buildings.Castle
-    let FairgroundsFood = BuildingsFood.Fairgrounds * current_buildings.Fairgrounds
-    let RoyalReserveFood = BuildingsFood.RoyalReserve * current_buildings.RoyalReserve
-    let GrandMarketFood = BuildingsFood.GrandMarket * current_buildings.GrandMarket
-    let GuildFood = BuildingsFood.Guild * current_buildings.Guild
-    let OfficerAcademyFood = BuildingsFood.OfficerAcademy * current_buildings.OfficerAcademy
-    let GranaryFood = BuildingsFood.Granary * current_buildings.Granary
-    let HousingFood = BuildingsFood.Housing * current_buildings.Housing
-    let AmphitheaterFood = BuildingsFood.Amphitheater * current_buildings.Amphitheater
-    let ArcherTowerFood = BuildingsFood.ArcherTower * current_buildings.ArcherTower
-    let SchoolFood = BuildingsFood.School * current_buildings.School
-    let MageTowerFood = BuildingsFood.MageTower * current_buildings.MageTower
-    let TradeOfficeFood = BuildingsFood.TradeOffice * current_buildings.TradeOffice
-    let ArchitectFood = BuildingsFood.Architect * current_buildings.Architect
-    let ParadeGroundsFood = BuildingsFood.ParadeGrounds * current_buildings.ParadeGrounds
-    let BarracksFood = BuildingsFood.Barracks * current_buildings.Barracks
-    let DockFood = BuildingsFood.Dock * current_buildings.Dock
-    let FishmongerFood = BuildingsFood.Fishmonger * current_buildings.Fishmonger
-    let FarmsFood = BuildingsFood.Farms * current_buildings.Farms
-    let HamletFood = BuildingsFood.Hamlet * current_buildings.Hamlet
+    let CastleFood = BuildingFoodEffect.Castle * current_buildings.castle
+    let FairgroundsFood = BuildingFoodEffect.Fairgrounds * current_buildings.fairgrounds
+    let RoyalReserveFood = BuildingFoodEffect.RoyalReserve * current_buildings.royal_reserve
+    let GrandMarketFood = BuildingFoodEffect.GrandMarket * current_buildings.grand_market
+    let GuildFood = BuildingFoodEffect.Guild * current_buildings.guild
+    let OfficerAcademyFood = BuildingFoodEffect.OfficerAcademy * current_buildings.officer_academy
+    let GranaryFood = BuildingFoodEffect.Granary * current_buildings.granary
+    let HousingFood = BuildingFoodEffect.Housing * current_buildings.housing
+    let AmphitheaterFood = BuildingFoodEffect.Amphitheater * current_buildings.amphitheater
+    let ArcherTowerFood = BuildingFoodEffect.ArcherTower * current_buildings.archer_tower
+    let SchoolFood = BuildingFoodEffect.School * current_buildings.school
+    let MageTowerFood = BuildingFoodEffect.MageTower * current_buildings.mage_tower
+    let TradeOfficeFood = BuildingFoodEffect.TradeOffice * current_buildings.trade_office
+    let ArchitectFood = BuildingFoodEffect.Architect * current_buildings.architect
+    let ParadeGroundsFood = BuildingFoodEffect.ParadeGrounds * current_buildings.parade_grounds
+    let BarracksFood = BuildingFoodEffect.Barracks * current_buildings.barracks
+    let DockFood = BuildingFoodEffect.Dock * current_buildings.dock
+    let FishmongerFood = BuildingFoodEffect.Fishmonger * current_buildings.fishmonger
+    let FarmsFood = BuildingFoodEffect.Farms * current_buildings.farms
+    let HamletFood = BuildingFoodEffect.Hamlet * current_buildings.hamlet
 
     let food = 10 + CastleFood + FairgroundsFood + RoyalReserveFood + GrandMarketFood + GuildFood + OfficerAcademyFood + GranaryFood + HousingFood + AmphitheaterFood + ArcherTowerFood + SchoolFood + MageTowerFood + TradeOfficeFood + ArchitectFood + ParadeGroundsFood + BarracksFood + DockFood + FishmongerFood + FarmsFood + HamletFood
 
@@ -249,6 +268,8 @@ func calculate_food{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_chec
     return (food - troop_population)
 end
 
+#@notice Calculate tribute
+#@return tribute: Tributee
 # TODO: Make LORDS decrease over time...
 @view
 func calculate_tribute{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}() -> (
@@ -260,6 +281,8 @@ func calculate_tribute{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_c
     return (tribute=BASE_LORDS_PER_DAY)
 end
 
+#@notice Calculate wonder tax
+#@return tax_percentage: Wonder tax percentage
 @view
 func calculate_wonder_tax{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}() -> (
     tax_percentage : felt
@@ -267,12 +290,12 @@ func calculate_wonder_tax{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, rang
     alloc_locals
 
     # CALCULATE WONDER TAX
-    let (controller) = MODULE_controller_address()
+    let (controller) = Module.get_controller_address()
     let (settle_state_address) = IModuleController.get_module_address(
-        controller, ModuleIds.L01_Settling
+        controller, ModuleIds.L01Settling
     )
 
-    let (realms_settled) = IL01_Settling.get_total_realms_settled(settle_state_address)
+    let (realms_settled) = IL01Settling.get_total_realms_settled(settle_state_address)
 
     let (less_than_tenth_settled) = is_nn_le(realms_settled, 1600)
 

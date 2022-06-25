@@ -1,7 +1,10 @@
+# -----------------------------------
 # ____MODULE_L08___CRYPTS_RESOURCES_LOGIC
 #   Logic to create and issue resources for a given Crypt
 #
 # MIT License
+# -----------------------------------
+
 %lang starknet
 
 from starkware.cairo.common.cairo_builtins import HashBuiltin
@@ -11,41 +14,40 @@ from starkware.cairo.common.alloc import alloc
 from starkware.starknet.common.syscalls import get_caller_address, get_block_timestamp
 from starkware.cairo.common.uint256 import Uint256
 
-from contracts.settling_game.utils.game_structs import (
-    CryptData,
-    ModuleIds,
-    ExternalContractIds,
-    EnvironmentProduction,
-)
-
-from contracts.settling_game.utils.constants import (
-    TRUE,
-    FALSE,
-    DAY,
-    RESOURCES_PER_CRYPT,
-    LEGENDARY_MULTIPLIER,
-)
-from contracts.settling_game.library.library_module import (
-    MODULE_controller_address,
-    MODULE_initializer,
-    MODULE_ERC721_owner_check,
-)
-
 from openzeppelin.token.erc721.interfaces.IERC721 import IERC721
-from contracts.settling_game.interfaces.IERC1155 import IERC1155
-from contracts.settling_game.interfaces.crypts_IERC721 import crypts_IERC721
-from contracts.settling_game.interfaces.imodules import IModuleController, IL07_Crypts
-
 from openzeppelin.upgrades.library import (
     Proxy_initializer,
     Proxy_only_admin,
     Proxy_set_implementation,
 )
 
-###############
-# CONSTRUCTOR #
-###############
+from contracts.settling_game.utils.game_structs import (
+    CryptData,
+    EnvironmentProduction,
+)
+from contracts.settling_game.utils.constants import (
+    TRUE,
+    FALSE,
+    DAY,
+    RESOURCES_PER_CRYPT,
+    LEGENDARY_MULTIPLIER,
+    ModuleIds,
+    ExternalContractIds,
+)
+from contracts.settling_game.library.library_module import Module
 
+from contracts.settling_game.interfaces.IERC1155 import IERC1155
+from contracts.settling_game.interfaces.ICryptsERC721 import ICryptsERC721
+from contracts.settling_game.interfaces.imodules import IModuleController, IL07Crypts
+
+
+# -----------------------------------
+# CONSTRUCTOR
+# -----------------------------------
+
+#@notice Module initializer
+#@param address_of_controller: Controller/arbiter address
+#@proxy_admin: Proxy admin address
 @external
 func initializer{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     address_of_controller : felt, proxy_admin : felt
@@ -55,6 +57,9 @@ func initializer{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_p
     return ()
 end
 
+#@notice Set new proxy implementation
+#@dev Can only be set by the arbiter
+#@param new_implementation: New implementation contract address
 @external
 func upgrade{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     new_implementation : felt
@@ -64,17 +69,19 @@ func upgrade{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     return ()
 end
 
-############
-# EXTERNAL #
-############
+# -----------------------------------
+# EXTERNAL
+# -----------------------------------
 
+#@notice Claim resources
+#@param token_id: Staked crypt token id
 @external
 func claim_resources{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     token_id : Uint256
 ):
     alloc_locals
     let (caller) = get_caller_address()
-    let (controller) = MODULE_controller_address()
+    let (controller) = Module.get_contract_address()
 
     # # CONTRACT ADDRESSES
 
@@ -85,7 +92,7 @@ func claim_resources{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_che
     )
     # S_Crypts ERC721 Token
     let (s_crypts_address) = IModuleController.get_external_contract_address(
-        controller, ExternalContractIds.S_Crypts
+        controller, ExternalContractIds.StakedCrypts
     )
     # Resources 1155 Token
     let (resources_address) = IModuleController.get_external_contract_address(
@@ -95,7 +102,7 @@ func claim_resources{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_che
     # # INTERNAL CONTRACTS
     # Crypts Logic Contract
     let (crypts_logic_address) = IModuleController.get_module_address(
-        controller, ModuleIds.L07_Crypts
+        controller, ModuleIds.L07Crypts
     )
 
     # FETCH OWNER
@@ -119,7 +126,7 @@ func claim_resources{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_che
     let (local user_resources_value : Uint256*) = alloc()  # How many of this resource get minted
 
     # FETCH CRYPT DATA
-    let (crypts_data : CryptData) = crypts_IERC721.fetch_crypt_data(crypts_address, token_id)
+    let (crypts_data : CryptData) = ICryptsERC721.fetch_crypt_data(crypts_address, token_id)
 
     # CALC DAYS
     let (days, _) = days_accrued(token_id)
@@ -156,29 +163,34 @@ func claim_resources{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_che
     return ()
 end
 
-###########
-# GETTERS #
-###########
+# -----------------------------------
+# GETTERS
+# -----------------------------------
 
-# FETCHES AVAILABLE RESOURCES PER DAY
+#@notice Get the amount of days accrued
+#@param token_id: Staked crypt token id
+#@return days_accrued: Amount of days accrued
+#@return remainder: Time left in seconds
 @view
 func days_accrued{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     token_id : Uint256
 ) -> (days_accrued : felt, remainder : felt):
-    let (controller) = MODULE_controller_address()
+    let (controller) = Module.get_contract_address()
     let (block_timestamp) = get_block_timestamp()
     let (settling_logic_address) = IModuleController.get_module_address(
-        controller, ModuleIds.L07_Crypts
+        controller, ModuleIds.L07Crypts
     )
 
     # GET DAYS ACCRUED
-    let (last_update) = IL07_Crypts.get_time_staked(settling_logic_address, token_id)
+    let (last_update) = IL07Crypts.get_time_staked(settling_logic_address, token_id)
     let (days_accrued, seconds_left_over) = unsigned_div_rem(block_timestamp - last_update, DAY)
 
     return (days_accrued, seconds_left_over)
 end
 
-# CLAIM CHECK
+#@notice Check if crypt resources are claimable
+#@param token_id: Staked crypt token id
+#@return can_claim: 1 if true, 0 otherwise
 @view
 func check_if_claimable{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     token_id : Uint256
@@ -198,11 +210,14 @@ func check_if_claimable{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_
     return (TRUE)
 end
 
-###########
-# GETTERS #
-###########
+# -----------------------------------
+# GETTERS
+# -----------------------------------
 
-# GET OUTPUT PER ENViRONMENT
+#@notice Get resource output per environment
+#@param environment: Crypt environment
+#@return r_output: Crypt resource
+#@return r_resource_id: Crypt resource
 @view
 func get_output_per_environment{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     environment : felt
@@ -210,7 +225,7 @@ func get_output_per_environment{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*
     alloc_locals
 
     # Each environment has a designated resourceId
-    with_attr error_message("RESOURCES: resource id overflowed a felt."):
+    with_attr error_message("L08CryptsResources: resource id overflowed a felt."):
         let r_resource_id = 22 + environment  # Environment struct is 1->6 and Crypts resources are 23->28
     end
 
@@ -233,11 +248,15 @@ func get_output_per_environment{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*
     return (EnvironmentProduction.EmbersGlow, r_resource_id)
 end
 
-############
-# INTERNAL #
-############
+# -----------------------------------
+# INTERNAL
+# -----------------------------------
 
-# RETURNS RESOURCE OUTPUT
+#@notice Calculate resource output
+#@param days: Number of days
+#@param output: Normal output
+#@param legendary: Wether or not the crypt is legendary
+#@return value: Resource output
 func calculate_resource_output{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     days : felt, output : felt, legendary : felt
 ) -> (value : Uint256):

@@ -9,7 +9,7 @@ from starkware.cairo.common.registers import get_label_location
 
 # taken from Warp's src
 # https://github.com/NethermindEth/warp/blob/develop/src/warp/cairo-src/evm/pow2.cairo
-#@notice Hardcoded table of powers of two.
+#@notice Hardcoded table of powers of two
 #@param i: Input
 #@return res: Result
 func pow2(i : felt) -> (res : felt):

@@ -1,7 +1,9 @@
+# -----------------------------------
 # ____MODULE_L05___WONDERS_LOGIC
 #   Controls all logic around the Wonder tax.
 #
 # MIT License
+# -----------------------------------
 
 %lang starknet
 
@@ -17,27 +19,23 @@ from starkware.cairo.common.alloc import alloc
 from starkware.starknet.common.syscalls import get_caller_address
 from starkware.cairo.common.uint256 import Uint256
 
-from contracts.settling_game.utils.game_structs import ModuleIds, ExternalContractIds
-from contracts.settling_game.interfaces.imodules import IModuleController, IL04_Calculator
-
-from contracts.settling_game.interfaces.IERC1155 import IERC1155
-from contracts.settling_game.interfaces.s_realms_IERC721 import s_realms_IERC721
-
-from contracts.settling_game.library.library_module import (
-    MODULE_controller_address,
-    MODULE_only_approved,
-    MODULE_initializer,
-)
-
 from openzeppelin.upgrades.library import (
     Proxy_initializer,
     Proxy_only_admin,
     Proxy_set_implementation,
 )
 
-###########
-# STORAGE #
-###########
+from contracts.settling_game.utils.constants import ModuleIds, ExternalContractIds
+from contracts.settling_game.interfaces.IModules import IModuleController, IL04Calculator
+
+from contracts.settling_game.interfaces.IERC1155 import IERC1155
+from contracts.settling_game.interfaces.IStakedRealmsERC721 import IStakedRealmsERC721
+
+from contracts.settling_game.library.library_module import Module
+
+# -----------------------------------
+# STORAGE
+# -----------------------------------
 
 @storage_var
 func epoch_claimed(address : felt) -> (epoch : felt):
@@ -63,10 +61,13 @@ end
 func tax_pool(epoch : felt, resource_id : Uint256) -> (supply : felt):
 end
 
-###############
-# CONSTRUCTOR #
-###############
+# -----------------------------------
+# CONSTRUCTOR
+# -----------------------------------
 
+#@notice Module initializer
+#@param address_of_controller: Controller/arbiter address
+#@proxy_admin: Proxy admin address
 @external
 func initializer{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     address_of_controller : felt, proxy_admin : felt
@@ -76,6 +77,9 @@ func initializer{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_p
     return ()
 end
 
+#@notice Set new proxy implementation
+#@dev Can only be set by the arbiter
+#@param new_implementation: New implementation contract address
 @external
 func upgrade{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     new_implementation : felt
@@ -85,16 +89,19 @@ func upgrade{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     return ()
 end
 
-############
-# EXTERNAL #
-############
+# -----------------------------------
+# EXTERNAL
+# -----------------------------------
 
+#@notice Pay wonder upkeep
+#@param epoch: Epoch 
+#@param token_id: Stakes realms token id
 @external
 func pay_wonder_upkeep{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     epoch : felt, token_id : Uint256
 ):
     alloc_locals
-    let (controller) = MODULE_controller_address()
+    let (controller) = Module.get_controller_address()
     let (caller) = get_caller_address()
 
     # ADDRESSES
@@ -105,12 +112,14 @@ func pay_wonder_upkeep{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_c
         controller, ExternalContractIds.Resources
     )
     let (calculator_address) = IModuleController.get_module_address(
-        contract_address=controller, module_id=ModuleIds.L04_Calculator
+        contract_address=controller, module_id=ModuleIds.L04Calculator
     )
 
-    let (current_epoch) = IL04_Calculator.calculate_epoch(calculator_address)
+    let (current_epoch) = IL04Calculator.calculate_epoch(calculator_address)
 
-    assert_nn_le(current_epoch, epoch)
+    with_attr error_message("L05Wonders: current "):
+        assert_nn_le(current_epoch, epoch)
+    end
 
     # Set upkept for epoch
     set_wonder_epoch_upkeep(epoch, token_id, 1)
@@ -137,23 +146,24 @@ func pay_wonder_upkeep{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_c
     return ()
 end
 
-# Called when a settlement is staked/unstaked to update the wonder pool
+#@notice Called when a settlement is staked/unstaked to update the wonder pool
+#@param token_id: (Staked) realm token id
 @external
 func update_wonder_settlement{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     token_id : Uint256
 ):
     alloc_locals
-    MODULE_only_approved()
+    Module.only_approved()
     update_epoch_pool()
 
-    let (controller) = MODULE_controller_address()
+    let (controller) = Module.get_controller_address()
 
     # calculator logic contract
     let (calculator_address) = IModuleController.get_module_address(
-        controller, ModuleIds.L04_Calculator
+        controller, ModuleIds.L04Calculator
     )
 
-    let (current_epoch) = IL04_Calculator.calculate_epoch(calculator_address)
+    let (current_epoch) = IL04Calculator.calculate_epoch(calculator_address)
     let (total_wonders_staked) = get_total_wonders_staked(current_epoch)
 
     let (wonder_id_staked) = get_wonder_id_staked(token_id)
@@ -168,6 +178,8 @@ func update_wonder_settlement{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, 
     return ()
 end
 
+#@notice Claim wonder tax
+#@param token_id: Staked realm token id
 @external
 func claim_wonder_tax{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     token_id : Uint256
@@ -175,14 +187,14 @@ func claim_wonder_tax{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_ch
     alloc_locals
     update_epoch_pool()
     let (caller) = get_caller_address()
-    let (controller) = MODULE_controller_address()
+    let (controller) = Module.get_controller_address()
 
     let (s_realms_address) = IModuleController.get_external_contract_address(
         controller, ExternalContractIds.S_Realms
     )
 
     let (calculator_address) = IModuleController.get_module_address(
-        contract_address=controller, module_id=ModuleIds.L04_Calculator
+        contract_address=controller, module_id=ModuleIds.L04Calculator
     )
 
     # Check that wonder is staked (this also checks if token_id a wonder at all)
@@ -190,12 +202,12 @@ func claim_wonder_tax{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_ch
     assert_not_zero(staked_epoch)
 
     let claiming_epoch_start = staked_epoch + 1
-    let (current_epoch) = IL04_Calculator.calculate_epoch(calculator_address)
+    let (current_epoch) = IL04Calculator.calculate_epoch(calculator_address)
     # assert that claim loop starts at a past epoch
     assert_nn_le(claiming_epoch_start, current_epoch - 1)
 
     # Check that wonder is owned by caller
-    let (owner_of_wonder) = s_realms_IERC721.ownerOf(s_realms_address, token_id)
+    let (owner_of_wonder) = IStakedRealmsERC721.ownerOf(s_realms_address, token_id)
     assert owner_of_wonder = caller
 
     loop_epochs_claim(caller, token_id, current_epoch, claiming_epoch_start)
@@ -205,6 +217,11 @@ func claim_wonder_tax{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_ch
     return ()
 end
 
+#@notice Claim for each epoch
+#@param caller: Claimer address
+#@param token_id: Staked realm token id
+#@param current_epoch: Current Epoch
+#@param claiming_epoch: Epoch to claim
 func loop_epochs_claim{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     caller : felt, token_id : Uint256, current_epoch : felt, claiming_epoch : felt
 ):
@@ -215,7 +232,7 @@ func loop_epochs_claim{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_c
         return ()
     end
 
-    let (controller) = MODULE_controller_address()
+    let (controller) = Module.get_controller_address()
 
     let (epoch_upkept) = get_wonder_epoch_upkeep(claiming_epoch, token_id)
     if epoch_upkept == 1:
@@ -248,6 +265,18 @@ func loop_epochs_claim{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_c
     return loop_epochs_claim(caller, token_id, current_epoch, claiming_epoch + 1)
 end
 
+#@notice Claim resources
+#@param token_id: Staked realm token id
+#@param claiming_epoch: Claiming epoch
+#@param epoch_total_wonders: Total amount of wonders
+#@param resource_claim_ids_len: Size of resource ids to claim
+#@param resource_claim_ids: List of resource ids to claim
+#@param resource_claim_amounts_len: Size of resource claim amounts
+#@param resource_claim_amounts: List of resource claim amounts
+#@return resource_claim_ids_len: Size of resource ids to claim
+#@return resource_claim_ids: List of resource ids to claim
+#@return resource_claim_amounts_len: Size of resource claim amounts
+#@return resource_claim_amounts: List of resource claim amounts
 func loop_resources_claim{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     token_id : Uint256,
     claiming_epoch : felt,
@@ -292,17 +321,17 @@ func loop_resources_claim{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, rang
     )
 end
 
-# Called everytime a user settled, unsettles or claims taxes
-# Recurses for every epoch that passed since last update
+#@notice Called everytime a user settled, unsettles or claims taxes
+#  Recurses for every epoch that passed since last update
 func update_epoch_pool{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
     alloc_locals
-    let (controller) = MODULE_controller_address()
+    let (controller) = Module.get_controller_address()
 
     let (calculator_address) = IModuleController.get_module_address(
-        contract_address=controller, module_id=ModuleIds.L04_Calculator
+        contract_address=controller, module_id=ModuleIds.L04Calculator
     )
 
-    let (current_epoch) = IL04_Calculator.calculate_epoch(calculator_address)
+    let (current_epoch) = IL04Calculator.calculate_epoch(calculator_address)
     let (last_updated_epoch) = get_last_updated_epoch()
 
     # Epochs that havent been updated since last update or recursion
@@ -323,10 +352,13 @@ func update_epoch_pool{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_c
     end
 end
 
-###########
-# SETTERS #
-###########
+# -----------------------------------
+# SETTERS
+# -----------------------------------
 
+#@notice Set the amount of total wonders staked
+#@param epoch: Set current epoch
+#@param amount: Amount of wonders staked
 func set_total_wonders_staked{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     epoch : felt, amount : felt
 ):
@@ -334,6 +366,8 @@ func set_total_wonders_staked{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, 
     return ()
 end
 
+#@notice Set last updated epoch
+#@param epoch: Epoch
 func set_last_updated_epoch{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     epoch : felt
 ):
@@ -341,6 +375,9 @@ func set_last_updated_epoch{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ra
     return ()
 end
 
+#@notice Set wonder id staked
+#@param token_id: Realm token id
+#@param epoch: Epoch at staking
 func set_wonder_id_staked{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     token_id : Uint256, epoch : felt
 ):
@@ -349,6 +386,10 @@ func set_wonder_id_staked{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, rang
     return ()
 end
 
+#@notice Set wonder epoch upkeep
+#@param epoch: Epoch
+#@param token_id: Staked realm token id
+#@upkept: Upkept
 func set_wonder_epoch_upkeep{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     epoch : felt, token_id : Uint256, upkept : felt
 ):
@@ -356,6 +397,10 @@ func set_wonder_epoch_upkeep{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, r
     return ()
 end
 
+#@notice Set tax pool
+#@param epoch: Epoch
+#@param resource_id: Resource id
+#@param amount: Amount
 func set_tax_pool{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     epoch : felt, resource_id : Uint256, amount : felt
 ):
@@ -363,6 +408,12 @@ func set_tax_pool{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_
     return ()
 end
 
+#@notice Batch set tax pool
+#@param epoch: Epoch
+#@param resource_ids_len: Size of resource_ids
+#@param resource_ids: Resource ids
+#@param amounts_len: Size of amounts
+#@param amounts: Resource amounts
 @external
 func batch_set_tax_pool{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     epoch : felt,
@@ -372,7 +423,7 @@ func batch_set_tax_pool{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_
     amounts : felt*,
 ):
     alloc_locals
-    MODULE_only_approved()
+    Module.only_approved()
     # Update tax pool
     if resource_ids_len == 0:
         return ()
@@ -387,10 +438,13 @@ func batch_set_tax_pool{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_
     )
 end
 
-###########
-# GETTERS #
-###########
+# -----------------------------------
+# GETTERS
+# -----------------------------------
 
+#@notice Get total wonders staked for a given epoch
+#@param epoch: Epoch
+#@return amount: Amount of total wonders staked
 @view
 func get_total_wonders_staked{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     epoch : felt
@@ -400,6 +454,8 @@ func get_total_wonders_staked{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, 
     return (amount=amount)
 end
 
+#@notice Get last updated epoch
+#@return epoch: Last updated epoch
 @view
 func get_last_updated_epoch{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     ) -> (epoch : felt):
@@ -408,6 +464,9 @@ func get_last_updated_epoch{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ra
     return (epoch=epoch)
 end
 
+#@notice Get the corresponding wonder id of a realm token id
+#@param token_id: Staked realm token id
+#@return wonder_id: Wonder id (0 if doesn't exist)
 @view
 func get_wonder_id_staked{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     token_id : Uint256
@@ -417,6 +476,10 @@ func get_wonder_id_staked{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, rang
     return (wonder_id=wonder_id)
 end
 
+#@notice Get wonder upkeep per epoch
+#@param epoch: Epoch
+#@param token_id: Staked realm token id
+#@return upkept: Upkeep
 @view
 func get_wonder_epoch_upkeep{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     epoch : felt, token_id : Uint256
@@ -426,6 +489,10 @@ func get_wonder_epoch_upkeep{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, r
     return (upkept=upkept)
 end
 
+#@notice Get tax pool
+#@param epoch: Epoch
+#@param resource_id: Resource id
+#@return supply: Tax pool supply
 @view
 func get_tax_pool{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     epoch : felt, resource_id : Uint256
