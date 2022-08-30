@@ -348,7 +348,9 @@ func attack_goblin_town{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_
     let (now) = get_block_timestamp()
     let (has_goblins) = is_le(spawn_ts, now)
     if has_goblins == FALSE:
-        return (TRUE)
+        with_attr error_message("GOBLINTOWN: Goblins have not spawned"):
+            assert 1 = 0
+        end
     end
 
     # get goblin squad
