@@ -384,6 +384,7 @@ func attack_goblin_town{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_
     set_realm_combat_data(realm_id, new_realm_data)
 
     # if successful, earn $lords
+    CombatOutcome_3.emit(realm_id, zero_id, attacker_end, goblins_end, outcome)
 
     if outcome == COMBAT_OUTCOME_ATTACKER_WINS:
         # attack was successful, goblin town defeated
@@ -406,8 +407,6 @@ func attack_goblin_town{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_
         tempvar pedersen_ptr = pedersen_ptr
         tempvar range_check_ptr = range_check_ptr
     end
-
-    CombatOutcome_3.emit(realm_id, zero_id, attacker_end, goblins_end, outcome)
 
     return (outcome)
 end
