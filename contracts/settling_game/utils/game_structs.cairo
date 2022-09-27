@@ -552,3 +552,96 @@ struct ArmyData {
     Level: felt,
     CallSign: felt,
 }
+
+struct MonsterData{
+    realmId: felt,
+    name: felt,
+    monster_class: felt,
+    rarity: felt,
+    level: felt,
+    xp: felt,
+    hp: felt,
+    attack_power:  felt,
+    defence_power:  felt,
+}
+
+namespace MonsterClassIds{
+    const Kobold = 1;
+    const Troll = 2;
+    const Golem = 3;
+    const Griffin = 4;
+    const DeathKnight = 5;
+    const Skeleton = 6;
+    const Dragon = 7;
+    const Arachnid = 8;
+    const Phoenix = 9;
+}
+
+namespace MonsterBaseHP{
+    const Kobold = 100;
+    const Troll = 120;
+    const Golem = 130;
+    const Griffin = 200;
+    const DeathKnight = 300;
+    const Skeleton = 110;
+    const Dragon = 500;
+    const Arachnid = 80;
+    const Phoenix = 400;
+}
+
+namespace MonsterBaseAtt{
+    const Kobold = 10;
+    const Troll = 8;
+    const Golem = 6;
+    const Griffin = 20;
+    const DeathKnight = 30;
+    const Skeleton = 11;
+    const Dragon = 50;
+    const Arachnid = 14;
+    const Phoenix = 60;
+}
+
+namespace MonsterBaseDef{
+    const Kobold = 10;
+    const Troll = 12;
+    const Golem = 11;
+    const Griffin = 15;
+    const DeathKnight = 20;
+    const Skeleton = 8;
+    const Dragon = 50;
+    const Arachnid = 8;
+    const Phoenix = 40;
+}
+
+namespace MonsterRarity{
+    const Kobold = 1;
+    const Troll = 1;
+    const Golem = 1;
+    const Griffin = 10;
+    const DeathKnight = 15;
+    const Skeleton = 1;
+    const Dragon = 25;
+    const Arachnid = 1;
+    const Phoenix = 20;
+}
+
+namespace MonsterName{
+    const Kobold = 1530005510546549672528943722554738;
+    const Troll = 1570576208797842662332268905720940;
+    const Golem = 346843711464563821798765;
+    const Griffin = 21497616767442350787579506542;
+    const DeathKnight = 82685712470812195809618036;
+    const Skeleton = 110883556525421511967713061926121074546;
+    const Dragon = 1327102488546107551771036188372846;
+    const Arachnid = 22100833015433502256364021106;
+    const Phoenix = 344889815916886659449411170458298744;
+}
+
+namespace MonsterRarityIds{
+    const Common = 1;
+    const Uncommon = 5;
+    const Rare = 10;
+    const SuperRare = 15;
+    const UltraRare = 20;
+    const Legendary = 25;
+}
