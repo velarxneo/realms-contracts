@@ -82,6 +82,7 @@ func constructor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
     _realms_address: felt,
     _treasury_address: felt,
     _s_realms_address: felt,
+    _monster_address: felt,
 ) {
     arbiter.write(arbiter_address);
 
@@ -118,6 +119,12 @@ func constructor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
     // crypts resources can write to resources token
     can_write_to.write(ModuleIds.L08_Crypts_Resources, ModuleIds.Resources_Token, TRUE);
 
+    can_write_to.write(ModuleIds.Rampage, ModuleIds.Resources_Token, TRUE);
+
+    can_write_to.write(ModuleIds.Rampage, ModuleIds.Combat, TRUE);
+
+    can_write_to.write(ModuleIds.Rampage, ModuleIds.Monsters_Token, TRUE);
+
     // # crypts logic to resources
     // can_write_to.write(ModuleIds.L07_Crypts, ModuleIds.L08_Crypts_Resources, TRUE)
 
@@ -132,6 +139,7 @@ func constructor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
     // external_contract_table.write(ExternalContractIds.S_Crypts, _s_crypts_address)
     external_contract_table.write(ExternalContractIds.Resources, _resources_address);
     external_contract_table.write(ExternalContractIds.Treasury, _treasury_address);
+    external_contract_table.write(ExternalContractIds.Monsters, _monster_address);
 
     return ();
 }
@@ -187,6 +195,7 @@ func set_initial_module_addresses{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*
     calculator_module_addr: felt,
     module_05_addr: felt,
     module_06_addr: felt,
+    rampage_module_addr: felt,
 ) {
     only_arbiter();
 
@@ -206,9 +215,14 @@ func set_initial_module_addresses{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*
     address_of_module_id.write(ModuleIds.Calculator, calculator_module_addr);
     module_id_of_address.write(calculator_module_addr, ModuleIds.Calculator);
 
+
     // Combat Logic
     address_of_module_id.write(ModuleIds.L06_Combat, module_06_addr);
     module_id_of_address.write(module_06_addr, ModuleIds.L06_Combat);
+
+    // Rampage Logic
+    address_of_module_id.write(ModuleIds.Rampage, rampage_module_addr);
+    module_id_of_address.write(rampage_module_addr, ModuleIds.Rampage);
 
     // # Crypts Logic
     // address_of_module_id.write(ModuleIds.L07_Crypts, module_07_addr)

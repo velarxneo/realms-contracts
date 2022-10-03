@@ -14,6 +14,7 @@ TOKEN_CONTRACT_IMPLEMENTATIONS = [
     Contracts("realms", "Realms_ERC721_Mintable"),
     Contracts("s_realms", "S_Realms_ERC721_Mintable"),
     Contracts("resources", "Resources_ERC1155_Mintable_Burnable"),
+    Contracts("monsters", "Monsters_ERC721_Mintable"),
 ]
 
 # Lords
@@ -32,6 +33,9 @@ REALMS_SYMBOL = str_to_felt("REALMS")
 S_REALMS = str_to_felt("S_Realms")
 S_REALMS_SYMBOL = str_to_felt("S_REALMS")
 
+S_REALMS = str_to_felt("Monsters")
+S_REALMS_SYMBOL = str_to_felt("MONSTERS")
+
 
 def run(nre):
 
@@ -45,11 +49,11 @@ def run(nre):
             alias=contract.alias,
             arguments=[],
         )
-
+        print('TESTING!!!!!!!!!!!' + contract.contract_name)
         declare(contract.contract_name, contract.alias)
-
+        print('11111111 contract.contract_name')
         predeclared_class = nre.get_declaration(contract.alias)
-
+        print('2222222 contract.contract_name')
         logged_deploy(
             nre,
             'PROXY_Logic',

@@ -133,6 +133,8 @@ const GOBLINDOWN_REWARD = 20;
 const DEFENDING_ARMY_XP = 30;
 const ATTACKING_ARMY_XP = 100;
 
+
+
 // total battalions
 const TOTAL_BATTALIONS = 30;
 

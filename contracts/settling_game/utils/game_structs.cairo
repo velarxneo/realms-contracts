@@ -157,8 +157,10 @@ namespace ModuleIds {
     const Buildings = 3;
     const Calculator = 4;
     const L06_Combat = 6;
+    const Combat = 6;
     const L07_Crypts = 7;
     const L08_Crypts_Resources = 8;
+    const Rampage = 9;
     const L09_Relics = 12;
     const L10_Food = 13;
     const GoblinTown = 14;
@@ -169,6 +171,7 @@ namespace ModuleIds {
     const Resources_Token = 1004;
     const S_Crypts_Token = 1005;
     const S_Realms_Token = 1006;
+    const Monsters_Token = 1009;
 }
 
 namespace ExternalContractIds {
@@ -180,6 +183,7 @@ namespace ExternalContractIds {
     const Storage = 6;
     const Crypts = 7;
     const S_Crypts = 8;
+    const Monsters = 9;
 }
 
 struct CryptData {
@@ -616,7 +620,7 @@ namespace MonsterBaseDef{
 namespace MonsterRarity{
     const Kobold = 1;
     const Troll = 1;
-    const Golem = 1;
+    const Golem = 5;
     const Griffin = 10;
     const DeathKnight = 15;
     const Skeleton = 1;

@@ -44,7 +44,7 @@ func last_token_id() -> (token_id : Uint256){
 }
 
 @storage_var
-func monsters_stats(token_id : Uint256) -> (packedMonsterStats : felt){
+func monsters_stats(token_id : Uint256) -> (packed_monster_stats : felt){
 }
 
 @storage_var
@@ -80,6 +80,12 @@ func ERC721_base_token_img_uri_len() -> (res: felt){
 @event
 func TransferMonster(
     token_id : felt, realmId : felt, name : felt, monster_class : felt, rarity : felt, level : felt, xp : felt, hp : felt, attack_power : felt, defence_power : felt, sender_address : felt, base_token_img_uri_len : felt, base_token_img_uri : felt*
+){
+}
+
+@event
+func UpdateMonsterAfterRampage(
+    token_id : Uint256, hp : felt, xp : felt
 ){
 }
 
@@ -231,11 +237,11 @@ func get_monster_info{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_ch
 }
 
 @view
-func get_monster_characteristics{
+func fetch_monster_data{
 
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
     token_id : Uint256
-) -> (token_id : Uint256, realmId : felt, name : felt, monster_class : felt, rarity : felt, level : felt, xp : felt, hp : felt, attack_power : felt, defence_power : felt){
+) -> (token_id : Uint256, monster_data : MonsterData){
 
     alloc_locals;
 
@@ -244,17 +250,16 @@ func get_monster_characteristics{
         uint256_check(token_id);
     }
     
-        let (packedMonsterStats) = monsters_stats.read(token_id);
-
+        let (packed_monster_stats) = monsters_stats.read(token_id);
         let (name) = monsters_name.read(token_id);
-        let (realmId) = unpack_data(packedMonsterStats, 0, 8191);
-        let (monster_class) = unpack_data(packedMonsterStats, 13, 31);
-        let (rarity) = unpack_data(packedMonsterStats, 18, 63);
-        let (level) = unpack_data(packedMonsterStats, 24, 127);
-        let (xp) = unpack_data(packedMonsterStats, 31, 1099511627775);
-        let (hp) = unpack_data(packedMonsterStats, 71, 1073741823);
-        let (attack_power) = unpack_data(packedMonsterStats, 101, 65535);
-        let (defence_power) = unpack_data(packedMonsterStats, 117, 65535);
+        let (realmId) = unpack_data(packed_monster_stats, 0, 8191);
+        let (monster_class) = unpack_data(packed_monster_stats, 13, 31);
+        let (rarity) = unpack_data(packed_monster_stats, 18, 63);
+        let (level) = unpack_data(packed_monster_stats, 24, 127);
+        let (xp) = unpack_data(packed_monster_stats, 31, 1099511627775);
+        let (hp) = unpack_data(packed_monster_stats, 71, 1073741823);
+        let (attack_power) = unpack_data(packed_monster_stats, 101, 65535);
+        let (defence_power) = unpack_data(packed_monster_stats, 117, 65535);
 
 
         let monster = MonsterData(
@@ -270,7 +275,7 @@ func get_monster_characteristics{
         );
 
 
-        return (token_id=token_id, realmId=realmId, name=name, monster_class=monster_class, rarity=rarity, level=level, xp=xp, hp=hp, attack_power=attack_power, defence_power=defence_power,);
+        return (token_id=token_id, monster_data=monster,);
 
 }
 
@@ -430,9 +435,9 @@ func breed_monster{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check
     let attack_power = _attack_power * SHIFT_MONSTER._7;  // 16
     let defence_power = _defence_power * SHIFT_MONSTER._8; // 16
     
-    let packedMonsterStats = realmId + monster_class + rarity + level + xp + hp + attack_power + defence_power;
+    let packed_monster_stats = realmId + monster_class + rarity + level + xp + hp + attack_power + defence_power;
 
-    monsters_stats.write(new_token_id, packedMonsterStats);
+    monsters_stats.write(new_token_id, packed_monster_stats);
     monsters_name.write(new_token_id, name);
  
     let (local base_token_img_uri) = alloc();
@@ -566,3 +571,36 @@ func _uint_to_felt{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_p
     assert_lt_felt(value.high, 2 ** 123);
     return (value.high * (2 ** 128) + value.low,);
 }
+
+func set_monster_data_and_emit{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    monster_id : Uint256, monster_data : MonsterData
+) -> () {
+
+    let (packed_monster_data) = pack_monster_data(monster_data);
+    monsters_stats.write(monster_id, packed_monster_data);
+    UpdateMonsterAfterRampage.emit(monster_id, monster_data.hp, monster_data.xp);
+
+    return ();
+}
+
+func pack_monster_data{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    monster_data : MonsterData
+) -> (packed_monster_data: felt) {
+
+    let name = monster_data.name;
+    let realmId = monster_data.realmId * SHIFT_MONSTER._1; // 13
+    let monster_class = monster_data.monster_class * SHIFT_MONSTER._2; // 5
+    let rarity = monster_data.rarity * SHIFT_MONSTER._3;  // 4
+    let level = monster_data.level * SHIFT_MONSTER._4;  // 7
+    let xp = monster_data.xp * SHIFT_MONSTER._5;  // 40
+    let hp = monster_data.hp * SHIFT_MONSTER._6; // 30
+    let attack_power = monster_data.attack_power * SHIFT_MONSTER._7;  // 16
+    let defence_power = monster_data.defence_power * SHIFT_MONSTER._8; // 16
+    
+    let packed_monster_data = realmId + monster_class + rarity + level + xp + hp + attack_power + defence_power;
+
+    return (packed_monster_data,);
+}
+
+
+
