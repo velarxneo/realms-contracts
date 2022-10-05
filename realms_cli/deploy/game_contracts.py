@@ -12,7 +12,9 @@ MODULE_CONTRACT_IMPLEMENTATIONS = [
     Contracts("Resources", "Resources"),
     Contracts("Buildings", "Buildings"),
     Contracts("Calculator", "Calculator"),
-    Contracts("L06_Combat", "L06_Combat")
+    Contracts("L06_Combat", "L06_Combat"),
+    Contracts("Combat", "Combat"),
+    Contracts("MonsterRampage", "MonsterRampage")
 ]
 
 
@@ -20,50 +22,54 @@ def run(nre):
 
     config = Config(nre.network)
 
-    logged_deploy(
-        nre,
-        "Arbiter",
-        alias="arbiter",
-        arguments=[
-            strhex_as_strfelt(config.ADMIN_ADDRESS),
-        ],
-    )
+    # logged_deploy(
+    #     nre,
+    #     "Arbiter",
+    #     alias="arbiter",
+    #     arguments=[
+    #         strhex_as_strfelt(config.ADMIN_ADDRESS),
+    #     ],
+    # )
 
-    logged_deploy(
-        nre,
-        "xoroshiro128_starstar",
-        alias="xoroshiro128_starstar",
-        arguments=[
-            '0x10AF',
-        ],
-    )
-    module, _ = safe_load_deployment("arbiter", nre.network)
+    # logged_deploy(
+    #     nre,
+    #     "xoroshiro128_starstar",
+    #     alias="xoroshiro128_starstar",
+    #     arguments=[
+    #         '0x10AF',
+    #     ],
+    # )
+    # module, _ = safe_load_deployment("arbiter", nre.network)
 
-    logged_deploy(
-        nre,
-        "ModuleController",
-        alias="moduleController",
-        arguments=[
-            strhex_as_strfelt(module),
-            strhex_as_strfelt(config.LORDS_PROXY_ADDRESS),
-            strhex_as_strfelt(config.RESOURCES_PROXY_ADDRESS),
-            strhex_as_strfelt(config.REALMS_PROXY_ADDRESS),
-            strhex_as_strfelt(config.ADMIN_ADDRESS),
-            strhex_as_strfelt(config.S_REALMS_PROXY_ADDRESS)
-        ],
-    )
+    
+    # print("TEST2:" + config.REALMS_PROXY_ADDRESS)
+    # config.RESOURCES_PROXY_ADDRESS = "0x029dc83fdea9e389c9f5c9521351741d0f809ec798c85ef85a9724089c8a2cbd"
+    # logged_deploy(
+    #     nre,
+    #     "ModuleController",
+    #     alias="moduleController",
+    #     arguments=[
+    #         strhex_as_strfelt(module),
+    #         strhex_as_strfelt(config.LORDS_PROXY_ADDRESS),
+    #         strhex_as_strfelt(config.RESOURCES_PROXY_ADDRESS),
+    #         strhex_as_strfelt(config.REALMS_PROXY_ADDRESS),
+    #         strhex_as_strfelt(config.ADMIN_ADDRESS),
+    #         strhex_as_strfelt(config.S_REALMS_PROXY_ADDRESS),
+    #         strhex_as_strfelt(config.MONSTERS_PROXY_ADDRESS)
+    #     ],
+    # )
 
-    module, _ = safe_load_deployment("moduleController", nre.network)
+    # module, _ = safe_load_deployment("moduleController", nre.network)
 
-    wrapped_send(
-        network=config.nile_network,
-        signer_alias=config.ADMIN_ALIAS,
-        contract_alias="arbiter",
-        function="set_address_of_controller",
-        arguments=[
-            strhex_as_strfelt(module),
-        ]
-    )
+    # wrapped_send(
+    #     network=config.nile_network,
+    #     signer_alias=config.ADMIN_ALIAS,
+    #     contract_alias="arbiter",
+    #     function="set_address_of_controller",
+    #     arguments=[
+    #         strhex_as_strfelt(module),
+    #     ]
+    # )
 
     #---------------- IMPLEMENTATIONS  ----------------#
     for contract in MODULE_CONTRACT_IMPLEMENTATIONS:

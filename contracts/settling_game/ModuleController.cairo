@@ -97,9 +97,11 @@ func constructor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 
     // combat can write to resources
     can_write_to.write(ModuleIds.L06_Combat, ModuleIds.Resources, TRUE);
+    can_write_to.write(ModuleIds.Combat, ModuleIds.Resources, TRUE);
 
     // # combat can write to settling
     can_write_to.write(ModuleIds.L06_Combat, ModuleIds.Settling, TRUE);
+    can_write_to.write(ModuleIds.Combat, ModuleIds.Settling, TRUE);
 
     // settling can write to s realms tokens
     can_write_to.write(ModuleIds.Settling, ModuleIds.S_Realms_Token, TRUE);
@@ -112,6 +114,7 @@ func constructor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 
     // combat can write to resources token
     can_write_to.write(ModuleIds.L06_Combat, ModuleIds.Resources_Token, TRUE);
+    can_write_to.write(ModuleIds.Combat, ModuleIds.Resources_Token, TRUE);
 
     // crypts can write to crypts token
     can_write_to.write(ModuleIds.L07_Crypts, ModuleIds.S_Crypts_Token, TRUE);
@@ -119,10 +122,13 @@ func constructor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
     // crypts resources can write to resources token
     can_write_to.write(ModuleIds.L08_Crypts_Resources, ModuleIds.Resources_Token, TRUE);
 
-    can_write_to.write(ModuleIds.Rampage, ModuleIds.Resources_Token, TRUE);
+    // monster rampage can write to resources
+    can_write_to.write(ModuleIds.Rampage, ModuleIds.Resources, TRUE);
 
+    // monster rampage can write to combat
     can_write_to.write(ModuleIds.Rampage, ModuleIds.Combat, TRUE);
 
+    // monster rampage can write to monsters
     can_write_to.write(ModuleIds.Rampage, ModuleIds.Monsters_Token, TRUE);
 
     // # crypts logic to resources

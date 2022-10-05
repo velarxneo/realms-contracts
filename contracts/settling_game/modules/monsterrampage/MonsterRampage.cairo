@@ -25,7 +25,7 @@ from starkware.cairo.common.bool import TRUE, FALSE
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, HashBuiltin
 from starkware.cairo.common.math import unsigned_div_rem, assert_lt, sqrt
 from starkware.cairo.common.math_cmp import is_le
-from starkware.cairo.common.uint256 import Uint256
+from starkware.cairo.common.uint256 import Uint256, uint256_eq
 from starkware.starknet.common.syscalls import get_block_timestamp, get_caller_address
 
 from openzeppelin.upgrades.library import Proxy
@@ -93,6 +93,12 @@ func RampageStart(
 }
 
 @event
+func TestEvent(
+    Testing: Uint256,
+) {
+}
+
+@event
 func RampageEnd(
     combat_outcome: felt,
     attacking_monster_id: Uint256,
@@ -138,6 +144,37 @@ func initializer{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
     return ();
 }
 
+// Testing purpose
+
+    @external
+    func initialize_monster_module_address{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    ) {
+        Module.initialize_monster_module_address();
+        return ();
+    }
+
+    @view   
+    func monster_module_address{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    ) -> (address: felt) {
+        alloc_locals;
+        let (address) = Module.monster_module_address();
+        return (address=address);
+    }
+
+    @view
+    func get_controller_address{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    ) -> (address: felt) {
+        alloc_locals;
+        let (address) = Module.controller_address();
+        return (address=address);
+    }
+
+// Testing purpose End
+
+
+
+
+
 // @notice Set new proxy implementation
 // @dev Can only be set by the arbiter
 // @param new_implementation: New implementation contract address
@@ -149,6 +186,7 @@ func upgrade{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     Proxy._set_implementation_hash(new_implementation);
     return ();
 }
+
 
 // -----------------------------------
 // External
@@ -169,13 +207,12 @@ func initiate_rampage{
     defending_realm_id: Uint256,
 ) -> (combat_outcome: felt) {
     alloc_locals;
-
+    
     // Check moster and army in same realm
     with_attr error_message("Rampage: monster and army not in same realm") {
-        assert attacking_monster_realm_id = defending_realm_id;
-       
+        let (is_equal) = uint256_eq(attacking_monster_realm_id, defending_realm_id);
+        assert is_equal = TRUE;
     }
-
     // Check if monster have reach the destination
 
     // let (travel_module) = Module.get_module_address(ModuleIds.Travel);
@@ -194,16 +231,25 @@ func initiate_rampage{
 
     // TODO: Food penalty for defending army
 
-    // fetch monster and army data
-    let (monsters_address) = Module.get_external_contract_address(ExternalContractIds.Monsters);
+    //Fetch monster and army data
+    //let (monsters_address) = Module.get_external_contract_address(ExternalContractIds.Monsters);
+    //local proxy_monsters_address : felt = 2534540160167813445908987233284672622400780377302960773553458893608298939858;
+    local monsters_address : felt = 1851722307445274121426274037651646728075363432698945473665987984925398082145;
+    //debugger(monsters_address);
     let (starting_monster_data: MonsterData) = IMonsters.fetch_monster_data(
-        contract_address=monsters_address, token_id=attacking_monster_id
+        //contract_address=monsters_address, token_id=attacking_monster_id
+        1851722307445274121426274037651646728075363432698945473665987984925398082145, Uint256(1, 0)
     );
 
+    debugger(starting_monster_data.attack_power);
+
     let (combat_address) = Module.get_module_address(ModuleIds.Combat);
+    debugger(combat_address);
     let (defending_realm_data: ArmyData) = ICombat.get_realm_army_combat_data(
         contract_address=combat_address, army_id=defending_army_id, realm_id=defending_realm_id
     );
+
+    //debugger(starting_monster_data.attack_power);
 
     // unpack defending army
     let (starting_defending_army: Army) = Combat.unpack_army(defending_realm_data.ArmyPacked);
@@ -215,6 +261,7 @@ func initiate_rampage{
         defending_realm_id,
         starting_defending_army,
     );
+
     let ending_monster_data = starting_monster_data;
     let (
         combat_outcome, ending_defending_army_packed
@@ -295,7 +342,13 @@ func initiate_rampage{
 // -----------------------------------
 // Internal
 // -----------------------------------
-
+func debugger{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(tester: felt) -> (
+    ) {
+        with_attr error_message("tester att= {tester}" ) {
+            assert 1=0;
+        }
+        return ();
+    }
 
 // @notice saves data and emits the changed metadata for cache
 // @param army_id: Army ID

@@ -60,6 +60,8 @@ class Config:
             "lords", self.nile_network)
         self.REALMS_ADDRESS, _ = safe_load_deployment(
             "realms", self.nile_network)
+        self.MONSTERS_ADDRESS, _ = safe_load_deployment(
+            "monsters", self.nile_network)
         self.RESOURCES_ADDRESS, _ = safe_load_deployment(
             "resources", self.nile_network)
         self.S_REALMS_ADDRESS, _ = safe_load_deployment(
@@ -73,6 +75,8 @@ class Config:
             "proxy_lords", self.nile_network)
         self.REALMS_PROXY_ADDRESS, _ = safe_load_deployment(
             "proxy_realms", self.nile_network)
+        self.MONSTERS_PROXY_ADDRESS, _ = safe_load_deployment(
+            "proxy_monsters", self.nile_network)
         self.RESOURCES_PROXY_ADDRESS, _ = safe_load_deployment(
             "proxy_resources", self.nile_network)
         self.S_REALMS_PROXY_ADDRESS, _ = safe_load_deployment(
@@ -82,26 +86,34 @@ class Config:
 
         self.SETTLING_ADDRESS, _ = safe_load_deployment(
             "Settling", self.nile_network)
-        self.RESOURCES_ADDRESS, _ = safe_load_deployment(
-            "Resources", self.nile_network)
+        # self.RESOURCES_ADDRESS, _ = safe_load_deployment(
+        #     "Resources", self.nile_network)
         self.BUILDINGS_ADDRESS, _ = safe_load_deployment(
             "Buildings", self.nile_network)
         self.CALCULATOR_ADDRESS, _ = safe_load_deployment(
             "Calculator", self.nile_network)
         self.L06_COMBAT_ADDRESS, _ = safe_load_deployment(
             "L06_Combat", self.nile_network)
+        self.COMBAT_ADDRESS, _ = safe_load_deployment(
+            "Combat", self.nile_network)
+        self.MONSTERRAMPAGE_ADDRESS, _ = safe_load_deployment(
+            "MonsterRampage", self.nile_network)
         # self.L07_CRYPTS_ADDRESS, _ = safe_load_deployment("L07_Crypts", self.nile_network)
 
         self.SETTLING_PROXY_ADDRESS, _ = safe_load_deployment(
             "proxy_Settling", self.nile_network)
-        self.RESOURCES_PROXY_ADDRESS, _ = safe_load_deployment(
-            "proxy_Resources", self.nile_network)
+        # self.RESOURCES_PROXY_ADDRESS, _ = safe_load_deployment(
+        #     "proxy_Resources", self.nile_network)
         self.BUILDINGS_PROXY_ADDRESS, _ = safe_load_deployment(
             "proxy_Buildings", self.nile_network)
         self.CALCULATOR_PROXY_ADDRESS, _ = safe_load_deployment(
             "proxy_Calculator", self.nile_network)
         self.L06_COMBAT_PROXY_ADDRESS, _ = safe_load_deployment(
             "proxy_L06_Combat", self.nile_network)
+        self.COMBAT_PROXY_ADDRESS, _ = safe_load_deployment(
+            "proxy_Combat", self.nile_network)
+        self.MONSTERRAMPAGE_PROXY_ADDRESS, _ = safe_load_deployment(
+            "proxy_MonsterRampage", self.nile_network)
         # self.L07_CRYPTS_PROXY_ADDRESS, _ = safe_load_deployment("proxy_L07_Crypts", self.nile_network)
 
         self.XOROSHIRO_ADDRESS, _ = safe_load_deployment(
@@ -111,6 +123,10 @@ class Config:
             "Exchange_ERC20_1155", self.nile_network)
         self.Exchange_ERC20_1155_PROXY_ADDRESS, _ = safe_load_deployment(
             "proxy_Exchange_ERC20_1155", self.nile_network)
+
+        self.GUILD_PROXY_CONTRACT, _ = safe_load_deployment(
+            "proxy_GuildContract", self.nile_network
+        )
 
         self.PROXY_NEXUS, _ = safe_load_deployment(
             "proxy_SingleSidedStaking", self.nile_network)

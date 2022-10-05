@@ -33,9 +33,9 @@ REALMS_SYMBOL = str_to_felt("REALMS")
 S_REALMS = str_to_felt("S_Realms")
 S_REALMS_SYMBOL = str_to_felt("S_REALMS")
 
-S_REALMS = str_to_felt("Monsters")
-S_REALMS_SYMBOL = str_to_felt("MONSTERS")
-
+# Monsters
+MONSTERS = str_to_felt("Monsters")
+MONSTERS_SYMBOL = str_to_felt("MONSTERS")
 
 def run(nre):
 
@@ -49,11 +49,11 @@ def run(nre):
             alias=contract.alias,
             arguments=[],
         )
-        print('TESTING!!!!!!!!!!!' + contract.contract_name)
+
         declare(contract.contract_name, contract.alias)
-        print('11111111 contract.contract_name')
+
         predeclared_class = nre.get_declaration(contract.alias)
-        print('2222222 contract.contract_name')
+
         logged_deploy(
             nre,
             'PROXY_Logic',
@@ -64,7 +64,7 @@ def run(nre):
     # testnet slow, so waiting period of time before calling otherwise these fail
     # this should be much faster on mainnet
     print('🕒 Waiting for deploy before invoking')
-    time.sleep(120)
+    time.sleep(240)
 
     # init proxies
     wrapped_send(
@@ -94,6 +94,19 @@ def run(nre):
             strhex_as_strfelt(config.ADMIN_ADDRESS),  # contract_owner
         ],
     )
+
+    wrapped_send(
+        network=config.nile_network,
+        signer_alias=config.ADMIN_ALIAS,
+        contract_alias="proxy_monsters",
+        function="initializer",
+        arguments=[
+            MONSTERS,  # name
+            MONSTERS_SYMBOL,  # ticker
+            strhex_as_strfelt(config.ADMIN_ADDRESS),  # contract_owner
+        ],
+    )
+
     wrapped_send(
         network=config.nile_network,
         signer_alias=config.ADMIN_ALIAS,

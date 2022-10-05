@@ -92,11 +92,11 @@ func UpdateMonsterAfterRampage(
 
 
 //
-// Constructor
+// Initializer
 //
 
-@constructor
-func constructor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+@external
+func initializer{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     name : felt, symbol : felt, owner : felt
 ){
 

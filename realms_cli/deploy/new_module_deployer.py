@@ -15,9 +15,8 @@ Contracts = namedtuple('Contracts', 'alias contract_name id')
 # 6. Set token contract approval if needed - Resources etc
 
 NEW_MODULES = [
-    Contracts("Travel", "Travel", "15"),
+    Contracts("MonsterRampage", "MonsterRampage", "9"),
 ]
-
 
 def run(nre):
 
@@ -33,9 +32,9 @@ def run(nre):
             alias=contract.alias,
             arguments=[],
         )
-
+        
         declare(contract.contract_name, contract.alias)
-
+        
         predeclared_class = nre.get_declaration(contract.alias)
 
         logged_deploy(
@@ -72,10 +71,29 @@ def run(nre):
             ],
         )
 
-        # wrapped_send(
-        #     network=config.nile_network,
-        #     signer_alias=config.ADMIN_ALIAS,
-        #     contract_alias="arbiter",
-        #     function="approve_module_to_module_write_access",
-        #     arguments=[6, 1]
-        # )
+        wrapped_send(
+            network=config.nile_network,
+            signer_alias=config.ADMIN_ALIAS,
+            contract_alias="arbiter",
+            function="approve_module_to_module_write_access",
+            arguments=[9, 6] # MonsterRampage, Combat
+        )
+
+        wrapped_send(
+            network=config.nile_network,
+            signer_alias=config.ADMIN_ALIAS,
+            contract_alias="arbiter",
+            function="approve_module_to_module_write_access",
+            arguments=[9, 2] # MonsterRampage, Resource
+        )
+
+        wrapped_send(
+            network=config.nile_network,
+            signer_alias=config.ADMIN_ALIAS,
+            contract_alias="arbiter",
+            function="approve_module_to_module_write_access",
+            arguments=[9, 1009] # MonsterRampage, Monster
+        )
+
+ 
+            
