@@ -113,14 +113,14 @@ func claim_resources{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check
 
     // modules
     let (settling_logic_address) = Module.get_module_address(ModuleIds.Settling);
-    let (goblin_town_address) = Module.get_module_address(ModuleIds.GoblinTown);
+    // let (goblin_town_address) = Module.get_module_address(ModuleIds.GoblinTown);
 
-    // check if there's no goblin town on realm
-    with_attr error_message("RESOURCES: Goblin Town present") {
-        let (_, spawn_ts) = IGoblinTown.get_strength_and_timestamp(goblin_town_address, token_id);
-        let (now) = get_block_timestamp();
-        assert_le(spawn_ts, now);
-    }
+    // // check if there's no goblin town on realm
+    // with_attr error_message("RESOURCES: Goblin Town present") {
+    //     let (_, spawn_ts) = IGoblinTown.get_strength_and_timestamp(goblin_town_address, token_id);
+    //     let (now) = get_block_timestamp();
+    //     assert_le(spawn_ts, now);
+    // }
 
     // FETCH OWNER
     let (owner) = IERC721.ownerOf(s_realms_address, token_id);
@@ -293,7 +293,7 @@ func pillage_resources{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_che
 
 
 // @notice Rampage resources after a succesful raid
-// @param token_id: Staked realm id
+// @param realm_id: Staked realm id
 @external
 func rampage_resources{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     realm_id: Uint256
@@ -311,15 +311,16 @@ func rampage_resources{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_che
     // EXTERNAL CONTRACTS
     let (realms_address) = Module.get_external_contract_address(ExternalContractIds.Realms);
     let (resources_address) = Module.get_external_contract_address(ExternalContractIds.Resources);
+    //let (settling_logic_address) = Module.get_module_address(ModuleIds.Settling);
     let (settling_logic_address) = Module.get_module_address(ModuleIds.Settling);
 
     // Get all vault raidable
-    //let (_, resource_mint, total_vault_days, _) = get_all_vault_raidable(token_id);
+    let (_, resource_mint, total_vault_days, _) = get_all_vault_raidable(realm_id);
 
     // CHECK IS RAIDABLE
-    // with_attr error_message("RESOURCES: NOTHING TO RAID!") {
-    //     assert_not_zero(total_vault_days);
-    // }
+    with_attr error_message("RESOURCES: NOTHING TO RAID!") {
+        assert_not_zero(total_vault_days);
+    }
 
     let (last_update) = ISettling.get_time_vault_staked(settling_logic_address, realm_id);
 
@@ -330,7 +331,6 @@ func rampage_resources{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_che
 
     // SET VAULT TIME = REMAINDER - CURRENT_TIME
     ISettling.set_time_vault_staked(settling_logic_address, realm_id, time_over);
-
 
     return ();
 }

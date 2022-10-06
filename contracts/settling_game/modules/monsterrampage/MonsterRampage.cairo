@@ -23,7 +23,7 @@
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.bool import TRUE, FALSE
 from starkware.cairo.common.cairo_builtins import BitwiseBuiltin, HashBuiltin
-from starkware.cairo.common.math import unsigned_div_rem, assert_lt, sqrt
+from starkware.cairo.common.math import unsigned_div_rem, assert_lt, sqrt, assert_lt_felt, assert_nn
 from starkware.cairo.common.math_cmp import is_le
 from starkware.cairo.common.uint256 import Uint256, uint256_eq
 from starkware.starknet.common.syscalls import get_block_timestamp, get_caller_address
@@ -79,6 +79,10 @@ from contracts.settling_game.utils.game_structs import (
     ArmyData,
 )
 
+const monsters_address = 2508856039100541254009953359129988050649979317977035860356928697654489929628;
+const combat_address = 2118877636712268396913981595473669875214988212675356303776187676728991725018;
+const resources_address = 2404238135091974935271797017420481573833122634562961073751070621061294700469;
+
 // -----------------------------------
 // Events
 // -----------------------------------
@@ -93,12 +97,6 @@ func RampageStart(
 }
 
 @event
-func TestEvent(
-    Testing: Uint256,
-) {
-}
-
-@event
 func RampageEnd(
     combat_outcome: felt,
     attacking_monster_id: Uint256,
@@ -106,10 +104,6 @@ func RampageEnd(
     defending_realm_id: Uint256,
     defending_army: Army,
 ) {
-}
-
-@event
-func Rampage(monster_id: Uint256, xp : felt, hp : felt) {
 }
 
 @event
@@ -125,6 +119,12 @@ func Move(monster_id: Uint256, realmId : felt) {
 @storage_var
 func xoroshiro_address() -> (address: felt) {
 }
+
+
+@storage_var
+func ending_monster_data() -> (monsterData: MonsterData) {
+}
+
 
 
 
@@ -146,28 +146,28 @@ func initializer{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
 
 // Testing purpose
 
-    @external
-    func initialize_monster_module_address{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    ) {
-        Module.initialize_monster_module_address();
-        return ();
-    }
+    // @external
+    // func initialize_monster_module_address{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    // ) {
+    //     Module.initialize_monster_module_address();
+    //     return ();
+    // }
 
-    @view   
-    func monster_module_address{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    ) -> (address: felt) {
-        alloc_locals;
-        let (address) = Module.monster_module_address();
-        return (address=address);
-    }
+    // @view   
+    // func monster_module_address{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    // ) -> (address: felt) {
+    //     alloc_locals;
+    //     let (address) = Module.monster_module_address();
+    //     return (address=address);
+    // }
 
-    @view
-    func get_controller_address{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    ) -> (address: felt) {
-        alloc_locals;
-        let (address) = Module.controller_address();
-        return (address=address);
-    }
+    // @view
+    // func get_controller_address{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    // ) -> (address: felt) {
+    //     alloc_locals;
+    //     let (address) = Module.controller_address();
+    //     return (address=address);
+    // }
 
 // Testing purpose End
 
@@ -192,6 +192,14 @@ func upgrade{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
 // External
 // -----------------------------------
 
+func debugger{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(tester: felt) -> (
+) {
+    with_attr error_message("tester att= {tester}") {
+        assert 1=0;
+    }
+    return ();
+}
+
 // @notice Commence the attack
 // @param attacking_realm_id: Staked Realm id (S_Realm)
 // @param defending_realm_id: Staked Realm id (S_Realm)
@@ -208,13 +216,13 @@ func initiate_rampage{
 ) -> (combat_outcome: felt) {
     alloc_locals;
     
-    // Check moster and army in same realm
-    with_attr error_message("Rampage: monster and army not in same realm") {
+    // Check monster and army in same realm
+    with_attr error_message("Rampage: Monster and Army not in same Realm") {
         let (is_equal) = uint256_eq(attacking_monster_realm_id, defending_realm_id);
         assert is_equal = TRUE;
     }
-    // Check if monster have reach the destination
 
+    // TODO: Check if monster have reach the destination
     // let (travel_module) = Module.get_module_address(ModuleIds.Travel);
     // ITravel.assert_traveller_is_at_location(
     //     travel_module,
@@ -226,35 +234,29 @@ func initiate_rampage{
     //     defending_army_id,
     // );
 
+    // TODO: Food penalty for defending army
     // check if the fighting realms have enough food, otherwise
     // decrease whole squad vitality by 50%
 
-    // TODO: Food penalty for defending army
-
     //Fetch monster and army data
-    //let (monsters_address) = Module.get_external_contract_address(ExternalContractIds.Monsters);
-    //local proxy_monsters_address : felt = 2534540160167813445908987233284672622400780377302960773553458893608298939858;
-    local monsters_address : felt = 1851722307445274121426274037651646728075363432698945473665987984925398082145;
-    //debugger(monsters_address);
+    //let (monsters_address) = Module.get_external_contract_address(ExternalContractIds.Monsters);    
     let (starting_monster_data: MonsterData) = IMonsters.fetch_monster_data(
-        //contract_address=monsters_address, token_id=attacking_monster_id
-        1851722307445274121426274037651646728075363432698945473665987984925398082145, Uint256(1, 0)
-    );
+        contract_address=monsters_address, token_id=attacking_monster_id);
 
-    debugger(starting_monster_data.attack_power);
+    // Check monster is alive (HP more than 0)
+    with_attr error_message("Rampage: Monster is dead") {
+        assert_nn(starting_monster_data.hp - 1);
+    }
 
-    let (combat_address) = Module.get_module_address(ModuleIds.Combat);
-    debugger(combat_address);
+    //let (combat_address) = Module.get_module_address(ModuleIds.L06_Combat);
     let (defending_realm_data: ArmyData) = ICombat.get_realm_army_combat_data(
         contract_address=combat_address, army_id=defending_army_id, realm_id=defending_realm_id
     );
 
-    //debugger(starting_monster_data.attack_power);
-
     // unpack defending army
     let (starting_defending_army: Army) = Combat.unpack_army(defending_realm_data.ArmyPacked);
 
-    // emit rampage start event
+    // emit Rampage Start event
     RampageStart.emit(
         attacking_monster_id,
         defending_army_id,
@@ -262,7 +264,6 @@ func initiate_rampage{
         starting_defending_army,
     );
 
-    let ending_monster_data = starting_monster_data;
     let (
         combat_outcome, ending_defending_army_packed
     ) = MonsterRampage.calculate_winner(
@@ -271,84 +272,122 @@ func initiate_rampage{
 
     let (ending_defending_army: Army) = Combat.unpack_army(ending_defending_army_packed);
 
-    // rampage only if monster wins
     let (now) = get_block_timestamp();
-    tempvar monster_xp = 0;
-    tempvar defending_xp = 0;
-    let monster_hp = 0;
     
-    
+    // rampage only if monster wins
     if (combat_outcome == COMBAT_OUTCOME_ATTACKER_WINS) {
         
-        // Reduce defending realm resource
-        let (controller) = Module.controller_address();
-        let (resources_logic_address) = IModuleController.get_module_address(
-            controller, ModuleIds.Resources
-        );       
-        let (caller) = get_caller_address();
-        IResources.rampage_resources(resources_logic_address, defending_realm_id);
-
-        //Monster Win - calculate monster remaining hp 
+        // Monster Win - Reduce defending realm resource
+        // let (controller) = Module.controller_address();
+        // let (resources_address) = IModuleController.get_module_address(
+        //     controller, ModuleIds.Resources);
         
-        let (base_hp) = IMonsters.get_base_hp(monsters_address, starting_monster_data.monster_class);
-        let (remaining_hp) = MonsterRampage.calculate_remaining_hp(base_hp, starting_monster_data.rarity, starting_monster_data.defence_power, TRUE);
-        monster_hp = remaining_hp;
-        monster_xp = MONSTER_XP.ATTACKING_MONSTER_WIN_XP;
-        defending_xp = DEFENDING_ARMY_XP;
+        IResources.rampage_resources(resources_address, defending_realm_id);
 
+        //Monster Win - calculate monster remaining hp         
+        let (base_hp) = IMonsters.get_base_hp(monsters_address, starting_monster_data.monster_class);                
+        let (remaining_hp) = MonsterRampage.calculate_remaining_hp(base_hp, 
+                                                                starting_monster_data, 
+                                                                TRUE);
+      
+        let ending_monster_data = MonsterData(
+            realmId=starting_monster_data.realmId,
+            name=starting_monster_data.name,
+            monster_class=starting_monster_data.monster_class,
+            rarity=starting_monster_data.rarity,
+            level=starting_monster_data.level,
+            xp=starting_monster_data.xp + MONSTER_XP.ATTACKING_MONSTER_WIN_XP,
+            hp=remaining_hp,
+            attack_power=starting_monster_data.attack_power,
+            defence_power=starting_monster_data.defence_power,
+        );
+
+        //update monster with reduced HP and added XP       
+        set_monster_data_and_emit(attacking_monster_id, ending_monster_data);
+    
         //  TO DO:
         //  Further reduce monster HP based on defending army attack power.
+
+        //store new army values with added XP
+        let new_defending_army_xp = defending_realm_data.XP + DEFENDING_ARMY_XP;   //30
+        
+        set_army_data_and_emit(
+            defending_army_id,
+            defending_realm_id,
+            ArmyData(ending_defending_army_packed, 
+                    now, 
+                    new_defending_army_xp, 
+                    defending_realm_data.Level, 
+                    defending_realm_data.CallSign),
+        );
+
+        //emit Rampage End event
+        RampageEnd.emit(
+            combat_outcome,
+            attacking_monster_id,
+            defending_army_id,
+            defending_realm_id,
+            ending_defending_army,
+        );
+
+        return (combat_outcome,);
 
     } else {
         //Monster Lost - calculate monster remaining hp
         let (base_hp) = IMonsters.get_base_hp(monsters_address, starting_monster_data.monster_class);
-        let (remaining_hp) = MonsterRampage.calculate_remaining_hp(base_hp, starting_monster_data.rarity, starting_monster_data.defence_power, FALSE);
-        monster_hp = remaining_hp;
-        monster_xp = MONSTER_XP.ATTACKING_MONSTER_LOSE_XP;
-        defending_xp = ATTACKING_ARMY_XP;
-    }
+        let (remaining_hp) = MonsterRampage.calculate_remaining_hp(base_hp, 
+                                                                starting_monster_data, 
+                                                                FALSE);
+                                                                
+        let ending_monster_data = MonsterData(
+            realmId=starting_monster_data.realmId,
+            name=starting_monster_data.name,
+            monster_class=starting_monster_data.monster_class,
+            rarity=starting_monster_data.rarity,
+            level=starting_monster_data.level,
+            xp=starting_monster_data.xp + MONSTER_XP.ATTACKING_MONSTER_LOSE_XP,
+            hp=remaining_hp,
+            attack_power=starting_monster_data.attack_power,
+            defence_power=starting_monster_data.defence_power,
+        );
 
-    ending_monster_data.hp = monster_hp;
-    ending_monster_data.xp = ending_monster_data.xp + monster_xp;
-    defending_realm_data.XP = defending_realm_data.XP + defending_xp;
-
-    // store new monster values with reduced HP and added XP
-    set_monster_data_and_emit(
-        attacking_monster_id,
-        ending_monster_data,
-    );
-
-    // store new army values with added XP
-    set_army_data_and_emit(
-        defending_army_id,
-        defending_realm_id,
-        ArmyData(ending_defending_army_packed, now, defending_realm_data.XP, defending_realm_data.Level, defending_realm_data.CallSign),
-    );
-
-    // emit end
+        //update monster with reduced HP and added XP       
+        set_monster_data_and_emit(attacking_monster_id, ending_monster_data);
     
+        //  TO DO:
+        //  Further reduce monster HP based on defending army attack power.
 
-    RampageEnd.emit(
-        combat_outcome,
-        attacking_monster_id,
-        defending_army_id,
-        defending_realm_id,
-        ending_defending_army,
-    );
+        //store new army values with added XP
+        let new_defending_army_xp = defending_realm_data.XP + ATTACKING_ARMY_XP;   //100
+        
+        set_army_data_and_emit(
+            defending_army_id,
+            defending_realm_id,
+            ArmyData(ending_defending_army_packed, 
+                    now, 
+                    new_defending_army_xp, 
+                    defending_realm_data.Level, 
+                    defending_realm_data.CallSign),
+        );
 
-    return (combat_outcome,);
+        //emit Rampage End event
+        RampageEnd.emit(
+            combat_outcome,
+            attacking_monster_id,
+            defending_army_id,
+            defending_realm_id,
+            ending_defending_army,
+        );
+
+        return (combat_outcome,);
+    }
+    //TODO: If Monster HP is less than or equal to zero, we need to burn the token
 }
 
 // -----------------------------------
 // Internal
 // -----------------------------------
-func debugger{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(tester: felt) -> (
-    ) {
-        with_attr error_message("tester att= {tester}" ) {
-            assert 1=0;
-        }
-        return ();
-    }
+
 
 // @notice saves data and emits the changed metadata for cache
 // @param army_id: Army ID
@@ -356,24 +395,26 @@ func debugger{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(t
 // @param army_data: Army metadata
 func set_army_data_and_emit{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     army_id: felt, realm_id: Uint256, army_data: ArmyData
-) {
+) -> () {
     alloc_locals;
-    let (controller) = Module.controller_address();
-    let (combat_module_address) = IModuleController.get_module_address(controller, ModuleIds.Combat);
+
+    //let (controller) = Module.controller_address();
+    //let (combat_address) = IModuleController.get_module_address(controller, ModuleIds.Combat);
+    
     ICombat.set_army_data_and_emit(
-        combat_module_address, army_id, realm_id, army_data
+        combat_address, army_id, realm_id, army_data
     );
     return ();
 }
 
-func set_monster_data_and_emit{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+func set_monster_data_and_emit{
+    range_check_ptr, syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, bitwise_ptr: BitwiseBuiltin*}(
     monster_id: Uint256, monster_data: MonsterData
-) {
+) -> () {
     alloc_locals;
 
-    let packed_monster_stats=0;    
-    let (monsters_address) = Module.get_external_contract_address(ExternalContractIds.Monsters);
-
+    //let (monsters_address) = Module.get_external_contract_address(ExternalContractIds.Monsters);
+    
     IMonsters.set_monster_data_and_emit(
         monsters_address, monster_id, monster_data
     );
@@ -381,9 +422,11 @@ func set_monster_data_and_emit{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, r
     return ();
 }
 
+
 // -----------------------------------
 // Getters
 // -----------------------------------
+
 
 
 //########

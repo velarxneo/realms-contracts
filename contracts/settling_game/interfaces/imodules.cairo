@@ -59,6 +59,8 @@ namespace IModuleController {
         module_03_addr: felt,
         module_04_addr: felt,
         module_06_addr: felt,
+        module_07_addr: felt,
+        module_08_addr: felt,
     ) {
     }
 }

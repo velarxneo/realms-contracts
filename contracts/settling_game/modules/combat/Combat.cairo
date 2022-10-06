@@ -429,6 +429,7 @@ func update_army_in_realm{
 // @param army_id: Army ID
 // @param realm_id: Realm ID
 // @param army_data: Army metadata
+@external
 func set_army_data_and_emit{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     army_id: felt, realm_id: Uint256, army_data: ArmyData
 ) {

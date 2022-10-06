@@ -7,6 +7,7 @@
 
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.cairo_builtins import HashBuiltin, SignatureBuiltin, BitwiseBuiltin
+from starkware.cairo.common.registers import get_label_location
 from starkware.cairo.common.uint256 import Uint256, uint256_check, uint256_add
 from starkware.starknet.common.syscalls import get_caller_address
 from openzeppelin.token.erc721.library import ERC721
@@ -21,10 +22,14 @@ from contracts.utils.Array import concat_arr
 from contracts.settling_game.interfaces.ixoroshiro import IXoroshiro
 
 from contracts.settling_game.utils.general import unpack_data
-from contracts.settling_game.utils.game_structs import MonsterData, MonsterBaseHP, MonsterBaseAtt, MonsterBaseDef, MonsterRarity, MonsterName
-
-
-
+from contracts.settling_game.utils.game_structs import (
+    MonsterData, 
+    MonsterBaseHP, 
+    MonsterBaseAtt, 
+    MonsterBaseDef, 
+    MonsterRarity, 
+    MonsterName,
+)
 
 namespace SHIFT_MONSTER{
     const _1 = 2 ** 0;
@@ -88,7 +93,6 @@ func UpdateMonsterAfterRampage(
     token_id : Uint256, hp : felt, xp : felt
 ){
 }
-
 
 
 //
@@ -241,42 +245,41 @@ func fetch_monster_data{
 
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
     token_id : Uint256
-) -> (token_id : Uint256, monster_data : MonsterData){
+) -> (monster_data : MonsterData){
 
-    alloc_locals;
-
+    alloc_locals;        
 
     with_attr error_message("ERC721: token_id is not a valid Uint256"){
         uint256_check(token_id);
     }
     
-        let (packed_monster_stats) = monsters_stats.read(token_id);
-        let (name) = monsters_name.read(token_id);
-        let (realmId) = unpack_data(packed_monster_stats, 0, 8191);
-        let (monster_class) = unpack_data(packed_monster_stats, 13, 31);
-        let (rarity) = unpack_data(packed_monster_stats, 18, 63);
-        let (level) = unpack_data(packed_monster_stats, 24, 127);
-        let (xp) = unpack_data(packed_monster_stats, 31, 1099511627775);
-        let (hp) = unpack_data(packed_monster_stats, 71, 1073741823);
-        let (attack_power) = unpack_data(packed_monster_stats, 101, 65535);
-        let (defence_power) = unpack_data(packed_monster_stats, 117, 65535);
+    let (packed_monster_stats) = monsters_stats.read(token_id);    
+    let (name) = monsters_name.read(token_id);
+    let (realmId) = unpack_data(packed_monster_stats, 0, 8191);
+    let (monster_class) = unpack_data(packed_monster_stats, 13, 31);
+    let (rarity) = unpack_data(packed_monster_stats, 18, 63);
+    let (level) = unpack_data(packed_monster_stats, 24, 127);
+    let (xp) = unpack_data(packed_monster_stats, 31, 1099511627775);
+    let (hp) = unpack_data(packed_monster_stats, 71, 1073741823);
+    let (attack_power) = unpack_data(packed_monster_stats, 101, 65535);
+    let (defence_power) = unpack_data(packed_monster_stats, 117, 65535);
 
+    // with_attr error_message("monster unpacked = {realmId}" ) {
+    //     assert 1=0;
+    // }
+    let monster = MonsterData(
+        realmId=realmId,
+        name=name,
+        monster_class=monster_class,
+        rarity=rarity,
+        level=level,
+        xp=xp,
+        hp=hp,
+        attack_power=attack_power,
+        defence_power=defence_power,
+    );
 
-        let monster = MonsterData(
-            realmId=realmId,
-            name=name,
-            monster_class=monster_class,
-            rarity=rarity,
-            level=level,
-            xp=xp,
-            hp=hp,
-            attack_power=attack_power,
-            defence_power=defence_power,
-        );
-
-
-        return (token_id=token_id, monster_data=monster,);
-
+    return (monster_data=monster,);
 }
 
 @view
@@ -331,6 +334,31 @@ func tokenImageURI{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check
     return (token_img_uri_len=base_token_img_uri_len, token_img_uri=base_token_img_uri);
 }
 
+// @notice Gets base hp value
+// @param monster_class: Monster Class ID
+// @ returns base hp value
+@view
+func get_base_hp{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    monster_class: felt
+) -> (hp: felt) {
+    alloc_locals;
+
+    let (type_label) = get_label_location(monster_base_hp);
+
+    return ([type_label + monster_class - 1],);
+
+    monster_base_hp:
+    dw MonsterBaseHP.Kobold;
+    dw MonsterBaseHP.Troll;
+    dw MonsterBaseHP.Golem;
+    dw MonsterBaseHP.Griffin;
+    dw MonsterBaseHP.DeathKnight;
+    dw MonsterBaseHP.Skeleton;
+    dw MonsterBaseHP.Dragon;
+    dw MonsterBaseHP.Arachnid;
+    dw MonsterBaseHP.Phoenix;
+}
+
 @external
 func transferFrom{pedersen_ptr : HashBuiltin*, syscall_ptr : felt*, range_check_ptr}(
     from_ : felt, to : felt, tokenId : Uint256
@@ -357,9 +385,20 @@ func mint{pedersen_ptr : HashBuiltin*, syscall_ptr : felt*, range_check_ptr}(
 }
 
 @external
-func burn{pedersen_ptr : HashBuiltin*, syscall_ptr : felt*, range_check_ptr}(tokenId : Uint256){
+func burn{pedersen_ptr : HashBuiltin*, syscall_ptr : felt*, range_check_ptr}(
+    tokenId : Uint256
+){
     ERC721.assert_only_token_owner(tokenId);
     ERC721._burn(tokenId);
+    return ();
+}
+
+@external
+func declare_dead_monster{pedersen_ptr : HashBuiltin*, syscall_ptr : felt*, range_check_ptr}(
+    token_id : Uint256
+){
+    ERC721.assert_only_token_owner(token_id);
+    ERC721._burn(token_id);
     return ();
 }
 
@@ -487,15 +526,6 @@ func remove_breeder{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_chec
     return ();
 }
 
-@external
-func declare_dead_monster{pedersen_ptr : HashBuiltin*, syscall_ptr : felt*, range_check_ptr}(
-    token_id : Uint256
-){
-    ERC721.assert_only_token_owner(token_id);
-    ERC721Enumerable._burn(token_id);
-    return ();
-}
-
 func assert_only_breeder{pedersen_ptr : HashBuiltin*, syscall_ptr : felt*, range_check_ptr}(){
     let (sender_address) = get_caller_address();
     let (is_true) = is_breeder.read(sender_address);
@@ -572,6 +602,7 @@ func _uint_to_felt{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_p
     return (value.high * (2 ** 128) + value.low,);
 }
 
+@external
 func set_monster_data_and_emit{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     monster_id : Uint256, monster_data : MonsterData
 ) -> () {

@@ -1,6 +1,6 @@
 // -----------------------------------
-//   COMBAT Library
-//   Library to help with the combat mechanics.
+//   MonsterRampage Library
+//   Library to help with the MonsterRampage mechanics.
 //
 // MIT License
 // -----------------------------------
@@ -200,31 +200,6 @@ namespace MonsterRampage {
         dw BattalionStatistics.Attack.LightInfantry;
         dw BattalionStatistics.Attack.HeavyInfantry;
     }
-
-    // @notice Gets base hp value
-    // @param monster_class: Monster Class ID
-    // @ returns base hp value
-    func get_base_hp{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-        monster_class: felt
-    ) -> (hp: felt) {
-        alloc_locals;
-
-        let (type_label) = get_label_location(monster_base_hp);
-
-        return ([type_label + monster_base_hp - 1],);
-
-        monster_base_hp:
-        dw MonsterBaseHP.Kobold;
-        dw MonsterBaseHP.Troll;
-        dw MonsterBaseHP.Golem;
-        dw MonsterBaseHP.Griffin;
-        dw MonsterBaseHP.DeathKnight;
-        dw MonsterBaseHP.Skeleton;
-        dw MonsterBaseHP.Dragon;
-        dw MonsterBaseHP.Arachnid;
-        dw MonsterBaseHP.Phoenix;
-    }
-
 
     // @notice Calculates real defence value
     // @param defense_sum: Sum of defence values
@@ -616,33 +591,35 @@ namespace MonsterRampage {
     //
     func calculate_remaining_hp{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
-    }(base_hp : felt, rarity : felt, defence : felt, outcome : felt)->(remaining_hp : felt){
-        alloc_locals;
-
-        tempvar reduce_percent=HP_REDUCTION.BY_RARITY_LOSE;
-        tempvar further_reduce_percent=HP_REDUCTION.BY_DEFENCE_LOSE;
-
-        if (outcome == TRUE){
-            reduce_percent=HP_REDUCTION.BY_RARITY_WIN;
-            further_reduce_percent=HP_REDUCTION.BY_DEFENCE_WIN;
-        }
-
+    }(base_hp : felt, monster_data : MonsterData, outcome : felt) -> (remaining_hp : felt){
+        alloc_locals;     
+       
         let (defence_luck)=roll_dice(DEFENCE_LUCK_HP_REDUCTION_MODIFIER.FROM, DEFENCE_LUCK_HP_REDUCTION_MODIFIER.TO);
 
+        if (outcome == TRUE){
+            let (hp_reduction) = hp_reduction_helper(HP_REDUCTION.BY_RARITY_WIN, base_hp, monster_data.rarity) ;
+            let (hp_further_reduction) = hp_reduction_helper(HP_REDUCTION.BY_DEFENCE_WIN, base_hp, monster_data.defence_power) ;
+            return (monster_data.hp - hp_reduction - hp_further_reduction - defence_luck,);
+
+        } else {
+            let (hp_reduction) = hp_reduction_helper(HP_REDUCTION.BY_RARITY_LOSE, base_hp,  monster_data.rarity) ;
+            let (hp_further_reduction) = hp_reduction_helper(HP_REDUCTION.BY_DEFENCE_LOSE, base_hp, monster_data.defence_power) ;             
+            return (monster_data.hp - hp_reduction - hp_further_reduction - defence_luck,);
+        }
+    }
+
+    func hp_reduction_helper{
+        syscall_ptr : felt*,
+        pedersen_ptr : HashBuiltin*,
+        range_check_ptr
+    }(reduce_percent: felt, base_hp : felt, factor : felt)->(hp_reduction: felt){
+        alloc_locals;
+
         let (_, percent) = unsigned_div_rem(reduce_percent, 100);
-        let (reduce_based_on_rarity, _) = unsigned_div_rem(reduce_percent, sqrt(rarity));
-        let (hp_to_reduce, _) = unsigned_div_rem(base_hp*reduce_based_on_rarity, 100);
+        let (reduce_based_on_factor, _) = unsigned_div_rem(reduce_percent, sqrt(factor));
+        let (hp_to_reduce, _) = unsigned_div_rem(base_hp*reduce_based_on_factor, 100);
 
-        let (_, percent) = unsigned_div_rem(further_reduce_percent, 100);
-        let (reduce_based_on_defence, _) = unsigned_div_rem(further_reduce_percent, sqrt(defence));
-        let (hp_to_further_reduce, _) = unsigned_div_rem(base_hp*reduce_based_on_defence, 100);
-
-        let remaining_hp = base_hp - hp_to_reduce - hp_to_further_reduce - defence_luck;
-        // tempvar hp_remaining = base_hp - hp_to_reduce;
-        // hp_remaining = hp_remaining - hp_to_further_reduce;
-        // hp_remaining = hp_remaining - defence_luck;
-        
-        return (remaining_hp,);
+        return (hp_to_reduce,);
     }
 
 // @return Dice roll value, from dice_roll_from to dice_roll_to (inclusive)
@@ -655,6 +632,14 @@ namespace MonsterRampage {
     
         let (_, r) = unsigned_div_rem(rnd, dice_roll_to-dice_roll_from);
         return (r + dice_roll_from,);  // values from 1 to 12 inclusive
+    }
+
+    func debugger{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(tester: felt) -> (
+    ) {
+        with_attr error_message("tester MRLibrary = {tester}") {
+            assert 1=0;
+        }
+        return ();
     }
 
 }
