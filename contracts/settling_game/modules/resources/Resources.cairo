@@ -315,7 +315,7 @@ func rampage_resources{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_che
     // get last vault time staked
     let (last_update) = ISettling.get_time_vault_staked(settling_logic_address, realm_id);
 
-    // get 25% of the time and return it
+    // reduce 75% of the realm resources
     let (time_over) = Resources._calculate_vault_time_remaining(block_timestamp - last_update);
 
     // set vault time = vault remainder - current time
