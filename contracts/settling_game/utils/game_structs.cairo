@@ -160,6 +160,8 @@ namespace ModuleIds {
     const Combat = 6;
     const L07_Crypts = 7;
     const L08_Crypts_Resources = 8;
+
+    //monster rampage module
     const Rampage = 9;
     const L09_Relics = 12;
     const L10_Food = 13;
@@ -171,6 +173,8 @@ namespace ModuleIds {
     const Resources_Token = 1004;
     const S_Crypts_Token = 1005;
     const S_Realms_Token = 1006;
+
+    //monster token 
     const Monsters_Token = 1009;
 }
 
@@ -183,6 +187,8 @@ namespace ExternalContractIds {
     const Storage = 6;
     const Crypts = 7;
     const S_Crypts = 8;
+
+    //monster token
     const Monsters = 9;
 }
 
@@ -557,6 +563,7 @@ struct ArmyData {
     CallSign: felt,
 }
 
+//monster data
 struct MonsterData{
     realmId: felt,
     name: felt,
@@ -569,6 +576,7 @@ struct MonsterData{
     defence_power:  felt,
 }
 
+//monster class
 namespace MonsterClassIds{
     const Kobold = 1;
     const Troll = 2;
@@ -581,6 +589,7 @@ namespace MonsterClassIds{
     const Phoenix = 9;
 }
 
+//monster base hp of various classes
 namespace MonsterBaseHP{
     const Kobold = 100;
     const Troll = 120;
@@ -593,6 +602,7 @@ namespace MonsterBaseHP{
     const Phoenix = 400;
 }
 
+//monster base attack of various classes
 namespace MonsterBaseAtt{
     const Kobold = 10;
     const Troll = 8;
@@ -605,6 +615,7 @@ namespace MonsterBaseAtt{
     const Phoenix = 60;
 }
 
+//monster base defence of various classes
 namespace MonsterBaseDef{
     const Kobold = 10;
     const Troll = 12;
@@ -617,6 +628,7 @@ namespace MonsterBaseDef{
     const Phoenix = 40;
 }
 
+//monster rarity of various classes
 namespace MonsterRarity{
     const Kobold = 1;
     const Troll = 1;
@@ -629,6 +641,7 @@ namespace MonsterRarity{
     const Phoenix = 20;
 }
 
+//monster names of various classes
 namespace MonsterName{
     const Kobold = 1530005510546549672528943722554738;
     const Troll = 1570576208797842662332268905720940;
@@ -641,6 +654,7 @@ namespace MonsterName{
     const Phoenix = 344889815916886659449411170458298744;
 }
 
+//monster rarity
 namespace MonsterRarityIds{
     const Common = 1;
     const Uncommon = 5;

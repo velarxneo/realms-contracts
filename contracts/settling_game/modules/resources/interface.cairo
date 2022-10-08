@@ -38,6 +38,7 @@ namespace IResources {
     func wonder_claim(token_id: Uint256) {
     }
 
+    // Added for monster rampage module interactions
     func rampage_resources(realm_id: Uint256) {
     }
 }

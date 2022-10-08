@@ -178,7 +178,8 @@ func safeTransferFrom{pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, range_chec
 func mint{pedersen_ptr: HashBuiltin*, syscall_ptr: felt*, range_check_ptr}(
     to: felt, tokenId: Uint256
 ) {
-    Module.only_approved();
+    //commented to simplify testing
+    //Module.only_approved();
     ERC721Enumerable._mint(to, tokenId);
     return ();
 }

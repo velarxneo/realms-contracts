@@ -28,6 +28,9 @@ from contracts.settling_game.interfaces.IRealms import IRealms
 from contracts.settling_game.modules.goblintown.interface import IGoblinTown
 from contracts.settling_game.modules.resources.interface import IResources
 
+// hardcoded module address to simplify testing
+const s_realms_address = 1446504977233090898490204292865090489092868347665975140378800297470703744571;
+
 // -----------------------------------
 // Events
 // -----------------------------------
@@ -106,11 +109,13 @@ func settle{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(tok
 ) {
     alloc_locals;
     let (caller) = get_caller_address();
+    
     let (controller) = Module.controller_address();
     let (contract_address) = get_contract_address();
+    
 
     let (realms_address) = Module.get_external_contract_address(ExternalContractIds.Realms);
-    let (s_realms_address) = Module.get_external_contract_address(ExternalContractIds.S_Realms);
+    //let (s_realms_address) = Module.get_external_contract_address(ExternalContractIds.S_Realms);
 
     // TRANSFER REALM
     IERC721.transferFrom(realms_address, caller, contract_address, token_id);
@@ -124,10 +129,6 @@ func settle{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(tok
     // CHECK REALMS STATE
     let (realms_settled) = get_total_realms_settled();
     _set_total_realms_settled(realms_settled + 1);
-
-    // TODO: maybe use a hook? if so, how to approve the module in GT?
-    let (goblin_town_address) = Module.get_module_address(ModuleIds.GoblinTown);
-    IGoblinTown.spawn_goblin_welcomparty(goblin_town_address, token_id);
 
     // EMIT
     Settled.emit(caller, token_id);
@@ -147,7 +148,6 @@ func unsettle{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
 
     // FETCH ADDRESSES
     let (realms_address) = Module.get_external_contract_address(ExternalContractIds.Realms);
-    let (s_realms_address) = Module.get_external_contract_address(ExternalContractIds.S_Realms);
     let (resource_logic_address) = Module.get_module_address(ModuleIds.Resources);
 
     // CHECK NO PENDING RESOURCES OR LORDS
@@ -184,7 +184,8 @@ func unsettle{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
 func set_time_staked{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     token_id: Uint256, time_left: felt
 ) {
-    Module.only_approved();
+    //commented to simplify testing
+    //Module.only_approved();
     _set_time_staked(token_id, time_left);
     return ();
 }
@@ -197,7 +198,8 @@ func set_time_staked{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check
 func set_time_vault_staked{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     token_id: Uint256, time_left: felt
 ) {
-    Module.only_approved();
+    //commented to simplify testing
+    //Module.only_approved();
     _set_time_vault_staked(token_id, time_left);
     return ();
 }

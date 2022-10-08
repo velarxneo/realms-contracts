@@ -292,44 +292,33 @@ func pillage_resources{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_che
 }
 
 
-// @notice Rampage resources after a succesful raid
-// @param realm_id: Staked realm id
+// @notice rampage resources after a successful monster rampage
+// @param realm_id: settled realm id
 @external
 func rampage_resources{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
     realm_id: Uint256
 ) {
     alloc_locals;
     let (block_timestamp) = get_block_timestamp();
-    // ONLY COMBAT CAN CALL
-    // TODO: Fix this to allow only combat to call.
-    // let (combat_address) = Module.get_module_address(ModuleIds.L06_Combat)
 
-    // with_attr error_message("RESOURCES: ONLY COMBAT MODULE CAN CALL"):
-    //     assert caller = combat_address
-    // end
-
-    // EXTERNAL CONTRACTS
-    let (realms_address) = Module.get_external_contract_address(ExternalContractIds.Realms);
-    let (resources_address) = Module.get_external_contract_address(ExternalContractIds.Resources);
-    //let (settling_logic_address) = Module.get_module_address(ModuleIds.Settling);
-    let (settling_logic_address) = Module.get_module_address(ModuleIds.Settling);
-
-    // Get all vault raidable
+    // hardcoded module address to simplify testing
+    let settling_logic_address = 3275714943864825639233659623938636858385736715039337451539129479449507080495;
+    
+    // get all vault raidable
     let (_, resource_mint, total_vault_days, _) = get_all_vault_raidable(realm_id);
 
-    // CHECK IS RAIDABLE
+    // check if realm is raidable
     with_attr error_message("RESOURCES: NOTHING TO RAID!") {
         assert_not_zero(total_vault_days);
     }
 
+    // get last vault time staked
     let (last_update) = ISettling.get_time_vault_staked(settling_logic_address, realm_id);
 
-    // Get 25% of the time and return it
-    // We only mint 25% of the resources, so we should only take 25% of the time
-    // TODO: could this overflow?
+    // get 25% of the time and return it
     let (time_over) = Resources._calculate_vault_time_remaining(block_timestamp - last_update);
 
-    // SET VAULT TIME = REMAINDER - CURRENT_TIME
+    // set vault time = vault remainder - current time
     ISettling.set_time_vault_staked(settling_logic_address, realm_id, time_over);
 
     return ();
